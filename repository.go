@@ -15,6 +15,7 @@ const (
 )
 
 type Repository interface {
+	Init(ids []string) error
 	Get(key string, passphrase []byte) (io.ReadCloser, error)
 	Put(key string) (io.WriteCloser, error)
 	Remove(key string) error
@@ -28,6 +29,23 @@ func NewRepository(root string) Repository {
 	return &fileRepository{
 		root: root,
 	}
+}
+
+func (r fileRepository) Init(ids []string) error {
+	if err := os.MkdirAll(r.root, dirPermission); err != nil {
+		return err
+	}
+	idfile, err := os.OpenFile(path.Join(r.root, idFilename), os.O_RDWR|os.O_CREATE|os.O_TRUNC, filePermission)
+	if err != nil {
+		return err
+	}
+	defer idfile.Close()
+	for _, id := range ids {
+		if _, err = io.WriteString(idfile, id+"\n"); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r fileRepository) Ids() ([]string, error) {

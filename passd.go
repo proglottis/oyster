@@ -28,6 +28,15 @@ func main() {
 	app.Usage = "Password daemon"
 	app.Commands = []cli.Command{
 		{
+			Name:  "init",
+			Usage: "Setup passd",
+			Action: func(c *cli.Context) {
+				if err := repo.Init(c.Args()); err != nil {
+					panic(err)
+				}
+			},
+		},
+		{
 			Name:      "get",
 			ShortName: "g",
 			Usage:     "Print a password",
