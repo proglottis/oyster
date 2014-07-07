@@ -1,13 +1,60 @@
 package main
 
 import (
+	"fmt"
+	"io"
 	"os"
-	"github.com/codegangsta/cli"
+	"os/user"
+	"path"
 )
 
+import (
+	"github.com/codegangsta/cli"
+	"github.com/howeyc/gopass"
+)
+
+func repositoryHome() string {
+	user, err := user.Current()
+	if err != nil {
+		panic(err)
+	}
+	return path.Join(user.HomeDir, ".passd")
+}
+
 func main() {
+	repo := NewRepository(repositoryHome())
 	app := cli.NewApp()
 	app.Name = "passd"
 	app.Usage = "Password daemon"
+	app.Commands = []cli.Command{
+		{
+			Name:      "get",
+			ShortName: "g",
+			Usage:     "Print a password",
+			Action: func(c *cli.Context) {
+				fmt.Printf("Password: ")
+				passphrase := gopass.GetPasswd()
+				plaintext, err := repo.Get(c.Args().First(), passphrase)
+				if err != nil {
+					panic(err)
+				}
+				defer plaintext.Close()
+				io.Copy(os.Stdout, plaintext)
+			},
+		},
+		{
+			Name:      "put",
+			ShortName: "p",
+			Usage:     "Store a password",
+			Action: func(c *cli.Context) {
+				plaintext, err := repo.Put(c.Args().First())
+				if err != nil {
+					panic(err)
+				}
+				defer plaintext.Close()
+				io.Copy(plaintext, os.Stdin)
+			},
+		},
+	}
 	app.Run(os.Args)
 }
