@@ -17,6 +17,7 @@ const (
 type Repository interface {
 	Get(key string, passphrase []byte) (io.ReadCloser, error)
 	Put(key string) (io.WriteCloser, error)
+	Remove(key string) error
 }
 
 type fileRepository struct {
@@ -69,4 +70,28 @@ func (r fileRepository) Put(key string) (io.WriteCloser, error) {
 		return nil, err
 	}
 	return CreateEncrypted(filepath, filePermission, el)
+}
+
+func dirEmpty(name string) bool {
+	dir, err := os.Open(name)
+	if err != nil {
+		return false
+	}
+	defer dir.Close()
+	_, err = dir.Readdir(1)
+	return err == io.EOF
+}
+
+func (r fileRepository) Remove(key string) error {
+	filepath := path.Join(r.root, key+fileExtension)
+	err := os.Remove(filepath)
+	if err != nil {
+		return err
+	}
+	if dirpath := path.Dir(filepath); dirpath != r.root && dirEmpty(dirpath) {
+		if err = os.Remove(dirpath); err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -55,6 +55,16 @@ func main() {
 				io.Copy(plaintext, os.Stdin)
 			},
 		},
+		{
+			Name:      "remove",
+			ShortName: "rm",
+			Usage:     "Remove a password",
+			Action: func(c *cli.Context) {
+				if err := repo.Remove(c.Args().First()); err != nil {
+					panic(err)
+				}
+			},
+		},
 	}
 	app.Run(os.Args)
 }
