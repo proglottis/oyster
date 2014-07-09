@@ -26,6 +26,31 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "passd"
 	app.Usage = "Password daemon"
+	app.EnableBashCompletion = true
+	app.Action = func(c *cli.Context) {
+		if len(c.Args()) > 0 {
+			fmt.Printf("Password: ")
+			passphrase := gopass.GetPasswd()
+			plaintext, err := repo.Get(c.Args().First(), passphrase)
+			if err != nil {
+				panic(err)
+			}
+			defer plaintext.Close()
+			io.Copy(os.Stdout, plaintext)
+		} else {
+			repo.Walk(func(file string){
+				fmt.Println(file)
+			})
+		}
+	}
+	app.BashComplete = func(c *cli.Context) {
+		if len(c.Args()) > 0 {
+			return
+		}
+		repo.Walk(func(file string){
+			fmt.Println(file)
+		})
+	}
 	app.Commands = []cli.Command{
 		{
 			Name:  "init",
@@ -34,21 +59,6 @@ func main() {
 				if err := repo.Init(c.Args()); err != nil {
 					panic(err)
 				}
-			},
-		},
-		{
-			Name:      "get",
-			ShortName: "g",
-			Usage:     "Print a password",
-			Action: func(c *cli.Context) {
-				fmt.Printf("Password: ")
-				passphrase := gopass.GetPasswd()
-				plaintext, err := repo.Get(c.Args().First(), passphrase)
-				if err != nil {
-					panic(err)
-				}
-				defer plaintext.Close()
-				io.Copy(os.Stdout, plaintext)
 			},
 		},
 		{

@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 )
 
 const (
@@ -19,6 +20,7 @@ type Repository interface {
 	Get(key string, passphrase []byte) (io.ReadCloser, error)
 	Put(key string) (io.WriteCloser, error)
 	Remove(key string) error
+	Walk(walkFn func(file string)) error
 }
 
 type fileRepository struct {
@@ -111,5 +113,17 @@ func (r fileRepository) Remove(key string) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (r fileRepository) Walk(walkFn func(file string)) error {
+	filepath.Walk(r.root, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() || filepath.Ext(path) != fileExtension {
+			return nil
+		}
+		path, _ = filepath.Rel(r.root, path)
+		walkFn(path[:len(path)-len(fileExtension)])
+		return nil
+	})
 	return nil
 }
