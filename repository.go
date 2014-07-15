@@ -18,6 +18,7 @@ const (
 type Repository interface {
 	Init(ids []string) error
 	Get(key string, passphrase []byte) (io.ReadCloser, error)
+	GetLine(key string, passphrase []byte) (string, error)
 	Put(key string) (io.WriteCloser, error)
 	Remove(key string) error
 	Walk(walkFn func(file string)) error
@@ -74,6 +75,17 @@ func (r fileRepository) Get(key string, passphrase []byte) (io.ReadCloser, error
 		return nil, err
 	}
 	return OpenEncrypted(path.Join(r.root, key+fileExtension), el, passphrase)
+}
+
+func (r fileRepository) GetLine(key string, passphrase []byte) (string, error) {
+	plaintext, err := r.Get(key, passphrase)
+	if err != nil {
+		return "", err
+	}
+	defer plaintext.Close()
+	scanner := bufio.NewScanner(plaintext)
+	scanner.Scan()
+	return scanner.Text(), scanner.Err()
 }
 
 func (r fileRepository) Put(key string) (io.WriteCloser, error) {
