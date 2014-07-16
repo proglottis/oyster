@@ -24,6 +24,40 @@ func repositoryHome() string {
 	return path.Join(user.HomeDir, ".passd")
 }
 
+func copyThenClear(text string, d time.Duration) error {
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt, os.Kill)
+	defer signal.Stop(signals)
+	original, err := clipboard.ReadAll()
+	if err != nil {
+		return err
+	}
+	err = clipboard.WriteAll(text)
+	if err != nil {
+		return err
+	}
+	select {
+	case <-signals:
+	case <-time.After(d):
+	}
+	current, _ := clipboard.ReadAll()
+	if current == text {
+		return clipboard.WriteAll(original)
+	}
+	return nil
+}
+
+func bashCompleteKeys(repo Repository) func(*cli.Context) {
+	return func(c *cli.Context) {
+		if len(c.Args()) > 0 {
+			return
+		}
+		repo.Walk(func(file string) {
+			fmt.Println(file)
+		})
+	}
+}
+
 func main() {
 	repo := NewRepository(repositoryHome())
 	app := cli.NewApp()
@@ -58,14 +92,7 @@ func main() {
 				defer plaintext.Close()
 				io.Copy(os.Stdout, plaintext)
 			},
-			BashComplete: func(c *cli.Context) {
-				if len(c.Args()) > 0 {
-					return
-				}
-				repo.Walk(func(file string) {
-					fmt.Println(file)
-				})
-			},
+			BashComplete: bashCompleteKeys(repo),
 		},
 		{
 			Name:  "copy",
@@ -77,27 +104,12 @@ func main() {
 				if err != nil {
 					panic(err)
 				}
-				signals := make(chan os.Signal, 1)
-				signal.Notify(signals, os.Interrupt, os.Kill)
-				original, _ := clipboard.ReadAll()
-				clipboard.WriteAll(password)
-				select {
-				case <-signals:
-				case <-time.After(45 * time.Second):
-				}
-				current, _ := clipboard.ReadAll()
-				if current == password {
-					clipboard.WriteAll(original)
+				err = copyThenClear(password, 45*time.Second)
+				if err != nil {
+					panic(err)
 				}
 			},
-			BashComplete: func(c *cli.Context) {
-				if len(c.Args()) > 0 {
-					return
-				}
-				repo.Walk(func(file string) {
-					fmt.Println(file)
-				})
-			},
+			BashComplete: bashCompleteKeys(repo),
 		},
 		{
 			Name:  "put",
@@ -120,6 +132,7 @@ func main() {
 					panic(err)
 				}
 			},
+			BashComplete: bashCompleteKeys(repo),
 		},
 	}
 	app.Run(os.Args)
