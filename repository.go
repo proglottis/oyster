@@ -35,7 +35,7 @@ func NewRepository(root string) Repository {
 	}
 }
 
-func checkKeyRingIds(ids []string) error {
+func checkPublicKeyRingIds(ids []string) error {
 	keyringname := PublicKeyRingName()
 	el, err := ReadKeyRing(keyringname)
 	if err != nil {
@@ -43,14 +43,29 @@ func checkKeyRingIds(ids []string) error {
 	}
 	for _, id := range ids {
 		if !IdMatchesAnyEntity(id, el) {
-			return fmt.Errorf("No matching entity %s in %s", id, keyringname)
+			return fmt.Errorf("No matching public key %s in %s", id, keyringname)
 		}
 	}
 	return nil
 }
 
+func checkSecureKeyRingIds(ids []string) error {
+	keyringname := SecureKeyRingName()
+	el, err := EntitiesFromKeyRing(keyringname, ids)
+	if err != nil {
+		return err
+	}
+	if len(el) < 1 {
+		return fmt.Errorf("No matching secure keys in %s", keyringname)
+	}
+	return nil
+}
+
 func (r fileRepository) Init(ids []string) error {
-	if err := checkKeyRingIds(ids); err != nil {
+	if err := checkPublicKeyRingIds(ids); err != nil {
+		return err
+	}
+	if err := checkSecureKeyRingIds(ids); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(r.root, dirPermission); err != nil {
