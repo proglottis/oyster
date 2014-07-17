@@ -41,13 +41,11 @@ func EntityMatchesId(entity *openpgp.Entity, id string) bool {
 	}
 	id = strings.ToUpper(id)
 	for _, key := range entity.Subkeys {
-		if key.PublicKey.KeyIdShortString() == id || key.PublicKey.KeyIdString() == id ||
-			key.PrivateKey.KeyIdShortString() == id || key.PrivateKey.KeyIdString() == id {
+		if key.PublicKey.KeyIdShortString() == id || key.PublicKey.KeyIdString() == id {
 			return true
 		}
 	}
-	return entity.PrimaryKey.KeyIdShortString() == id || entity.PrimaryKey.KeyIdString() == id ||
-		entity.PrivateKey.KeyIdShortString() == id || entity.PrivateKey.KeyIdString() == id
+	return entity.PrimaryKey.KeyIdShortString() == id || entity.PrimaryKey.KeyIdString() == id
 }
 
 func EntityMatchesAnyId(entity *openpgp.Entity, ids []string) bool {
@@ -59,13 +57,26 @@ func EntityMatchesAnyId(entity *openpgp.Entity, ids []string) bool {
 	return false
 }
 
-func EntitiesFromKeyRing(keyRingName string, ids []string) (openpgp.EntityList, error) {
+func IdMatchesAnyEntity(id string, el openpgp.EntityList) bool {
+	for _, entity := range el {
+		if EntityMatchesId(entity, id) {
+			return true
+		}
+	}
+	return false
+}
+
+func ReadKeyRing(keyRingName string) (openpgp.EntityList, error) {
 	keyfile, err := os.Open(keyRingName)
 	if err != nil {
 		return nil, err
 	}
 	defer keyfile.Close()
-	keyring, err := openpgp.ReadKeyRing(keyfile)
+	return openpgp.ReadKeyRing(keyfile)
+}
+
+func EntitiesFromKeyRing(keyRingName string, ids []string) (openpgp.EntityList, error) {
+	keyring, err := ReadKeyRing(keyRingName)
 	if err != nil {
 		return nil, err
 	}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -34,7 +35,24 @@ func NewRepository(root string) Repository {
 	}
 }
 
+func checkKeyRingIds(ids []string) error {
+	keyringname := PublicKeyRingName()
+	el, err := ReadKeyRing(keyringname)
+	if err != nil {
+		return err
+	}
+	for _, id := range ids {
+		if !IdMatchesAnyEntity(id, el) {
+			return fmt.Errorf("No matching entity %s in %s", id, keyringname)
+		}
+	}
+	return nil
+}
+
 func (r fileRepository) Init(ids []string) error {
+	if err := checkKeyRingIds(ids); err != nil {
+		return err
+	}
 	if err := os.MkdirAll(r.root, dirPermission); err != nil {
 		return err
 	}

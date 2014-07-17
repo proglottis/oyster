@@ -74,8 +74,13 @@ func main() {
 			Name:  "init",
 			Usage: "Setup passd",
 			Action: func(c *cli.Context) {
-				if err := repo.Init(c.Args()); err != nil {
-					panic(err)
+				args := c.Args()
+				if !args.Present() {
+					fmt.Println("Must provide at least one GPG ID")
+					return
+				}
+				if err := repo.Init(args); err != nil {
+					fmt.Println(err)
 				}
 			},
 		},
