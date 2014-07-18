@@ -60,7 +60,7 @@ func bashCompleteKeys(repo Repository) func(*cli.Context) {
 
 type password struct {
 	Password []byte
-	Err error
+	Err      error
 }
 
 func getPassword() ([]byte, error) {
@@ -77,9 +77,9 @@ func getPassword() ([]byte, error) {
 		fmt.Printf("Password: ")
 		defer fmt.Printf("\n")
 		p, err := terminal.ReadPassword(0)
-		passwords <- password {
+		passwords <- password{
 			Password: p,
-			Err: err,
+			Err:      err,
 		}
 		close(passwords)
 	}()
@@ -176,6 +176,15 @@ func main() {
 				}
 			},
 			BashComplete: bashCompleteKeys(repo),
+		},
+		{
+			Name:  "server",
+			Usage: "Start password daemon",
+			Action: func(c *cli.Context) {
+				if err := RunServer(repo); err != nil {
+					panic(err)
+				}
+			},
 		},
 	}
 	app.Run(os.Args)
