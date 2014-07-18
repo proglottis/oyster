@@ -63,6 +63,21 @@ type password struct {
 	Err      error
 }
 
+func interruptibleCopy(dst io.Writer, src io.Reader) {
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt, os.Kill)
+	defer signal.Stop(signals)
+	done := make(chan struct{})
+	go func() {
+		io.Copy(dst, src)
+		close(done)
+	}()
+	select {
+	case <- signals:
+	case <- done:
+	}
+}
+
 func getPassword() ([]byte, error) {
 	signals := make(chan os.Signal, 1)
 	passwords := make(chan password)
@@ -163,7 +178,10 @@ func main() {
 					panic(err)
 				}
 				defer plaintext.Close()
-				io.Copy(plaintext, os.Stdin)
+				if terminal.IsTerminal(0) {
+					fmt.Println("Enter your password...")
+				}
+				interruptibleCopy(plaintext, os.Stdin)
 			},
 		},
 		{
