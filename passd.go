@@ -11,9 +11,9 @@ import (
 )
 
 import (
+	"code.google.com/p/go.crypto/ssh/terminal"
 	"github.com/atotto/clipboard"
 	"github.com/codegangsta/cli"
-	"github.com/howeyc/gopass"
 )
 
 func repositoryHome() string {
@@ -58,6 +58,40 @@ func bashCompleteKeys(repo Repository) func(*cli.Context) {
 	}
 }
 
+type password struct {
+	Password []byte
+	Err error
+}
+
+func getPassword() ([]byte, error) {
+	signals := make(chan os.Signal, 1)
+	passwords := make(chan password)
+	signal.Notify(signals, os.Interrupt, os.Kill)
+	defer signal.Stop(signals)
+	state, err := terminal.GetState(0)
+	if err != nil {
+		return nil, err
+	}
+	defer terminal.Restore(0, state)
+	go func() {
+		fmt.Printf("Password: ")
+		defer fmt.Printf("\n")
+		p, err := terminal.ReadPassword(0)
+		passwords <- password {
+			Password: p,
+			Err: err,
+		}
+		close(passwords)
+	}()
+	select {
+	case <-signals:
+		return nil, fmt.Errorf("Password entry cancelled")
+	case password := <-passwords:
+		return password.Password, password.Err
+	}
+	panic("unreachable")
+}
+
 func main() {
 	repo := NewRepository(repositoryHome())
 	app := cli.NewApp()
@@ -88,8 +122,10 @@ func main() {
 			Name:  "get",
 			Usage: "Print a password to console",
 			Action: func(c *cli.Context) {
-				fmt.Printf("Password: ")
-				passphrase := gopass.GetPasswd()
+				passphrase, err := getPassword()
+				if err != nil {
+					panic(err)
+				}
 				plaintext, err := repo.Get(c.Args().First(), passphrase)
 				if err != nil {
 					panic(err)
@@ -103,8 +139,10 @@ func main() {
 			Name:  "copy",
 			Usage: "Copy a password to the clipboard",
 			Action: func(c *cli.Context) {
-				fmt.Printf("Password: ")
-				passphrase := gopass.GetPasswd()
+				passphrase, err := getPassword()
+				if err != nil {
+					panic(err)
+				}
 				password, err := repo.GetLine(c.Args().First(), passphrase)
 				if err != nil {
 					panic(err)
