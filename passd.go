@@ -73,8 +73,8 @@ func interruptibleCopy(dst io.Writer, src io.Reader) {
 		close(done)
 	}()
 	select {
-	case <- signals:
-	case <- done:
+	case <-signals:
+	case <-done:
 	}
 }
 

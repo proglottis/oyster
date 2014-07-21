@@ -3,8 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
+)
+
+import (
+	"github.com/gorilla/handlers"
 )
 
 const (
@@ -16,34 +21,47 @@ func RunServer(repo Repository) error {
 	if port == "" {
 		port = defaultPort
 	}
-	http.Handle("/", RepoHandler(repo))
+	http.Handle("/keys", defaultHandler(http.StripPrefix("/keys", &keysHandler{repo: repo})))
+	http.Handle("/keys/", defaultHandler(http.StripPrefix("/keys", &keyHandler{repo: repo})))
 	return http.ListenAndServe("localhost:"+port, nil)
 }
 
-type item struct {
-	Key string `json:"key"`
+func defaultHandler(handler http.Handler) http.Handler {
+	return handlers.CombinedLoggingHandler(os.Stdout, &panicHandler{next: handler})
 }
 
-type repoHandler struct {
-	repo Repository
+type panicHandler struct {
+	next http.Handler
 }
 
-func RepoHandler(repo Repository) http.Handler {
-	return &repoHandler{
-		repo: repo,
-	}
-}
-
-func (h repoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h panicHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if r := recover(); r != nil {
 			http.Error(w, fmt.Sprintf("%s", r), http.StatusInternalServerError)
 		}
 	}()
-	h.handleIndex(w, r)
+	h.next.ServeHTTP(w, r)
 }
 
-func (h repoHandler) handleIndex(w http.ResponseWriter, r *http.Request) {
+type item struct {
+	Key   string      `json:"key"`
+	Value interface{} `json:"value,omitempty"`
+}
+
+type keysHandler struct {
+	repo Repository
+}
+
+func (h keysHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "POST":
+		h.GetKeys(w, r)
+	default:
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+	}
+}
+
+func (h keysHandler) GetKeys(w http.ResponseWriter, r *http.Request) {
 	items := make([]item, 0)
 	h.repo.Walk(func(file string) {
 		items = append(items, item{
@@ -51,6 +69,34 @@ func (h repoHandler) handleIndex(w http.ResponseWriter, r *http.Request) {
 		})
 	})
 	JSON(w, items)
+}
+
+type keyHandler struct {
+	repo Repository
+}
+
+func (h keyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "POST":
+		h.GetKey(w, r)
+	default:
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+	}
+}
+
+func (h keyHandler) GetKey(w http.ResponseWriter, r *http.Request) {
+	passphrase := []byte(r.PostForm.Get("passphrase"))
+	key := r.URL.Path
+	plaintext, err := h.repo.Get(key, passphrase)
+	if err != nil {
+		panic(err)
+	}
+	defer plaintext.Close()
+	value, err := ioutil.ReadAll(plaintext)
+	if err != nil {
+		panic(err)
+	}
+	JSON(w, item{Key: key, Value: value})
 }
 
 func JSON(w http.ResponseWriter, v interface{}) {
