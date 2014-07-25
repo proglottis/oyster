@@ -108,7 +108,7 @@ func getPassword() ([]byte, error) {
 }
 
 func main() {
-	repo := NewRepository(repositoryHome())
+	repo := NewRepository(NewDirectory(repositoryHome()))
 	app := cli.NewApp()
 	app.Name = "passd"
 	app.Usage = "Password daemon"

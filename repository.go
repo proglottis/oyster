@@ -5,15 +5,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 )
 
 const (
-	idFilename     = ".gpg-id"
-	fileExtension  = ".gpg"
-	filePermission = 0600
-	dirPermission  = 0700
+	idFilename    = ".gpg-id"
+	fileExtension = ".gpg"
 )
 
 type Repository interface {
@@ -26,13 +23,11 @@ type Repository interface {
 }
 
 type fileRepository struct {
-	root string
+	fs FileSystem
 }
 
-func NewRepository(root string) Repository {
-	return &fileRepository{
-		root: root,
-	}
+func NewRepository(fs FileSystem) Repository {
+	return &fileRepository{fs: fs}
 }
 
 func checkPublicKeyRingIds(ids []string) error {
@@ -68,10 +63,7 @@ func (r fileRepository) Init(ids []string) error {
 	if err := checkSecureKeyRingIds(ids); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(r.root, dirPermission); err != nil {
-		return err
-	}
-	idfile, err := os.OpenFile(path.Join(r.root, idFilename), os.O_RDWR|os.O_CREATE|os.O_TRUNC, filePermission)
+	idfile, err := r.fs.Create(idFilename)
 	if err != nil {
 		return err
 	}
@@ -85,7 +77,7 @@ func (r fileRepository) Init(ids []string) error {
 }
 
 func (r fileRepository) Ids() ([]string, error) {
-	file, err := os.Open(path.Join(r.root, idFilename))
+	file, err := r.fs.Open(idFilename)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +99,11 @@ func (r fileRepository) Get(key string, passphrase []byte) (io.ReadCloser, error
 	if err != nil {
 		return nil, err
 	}
-	return OpenEncrypted(path.Join(r.root, key+fileExtension), el, passphrase)
+	ciphertext, err := r.fs.Open(key + fileExtension)
+	if err != nil {
+		return nil, err
+	}
+	return ReadEncrypted(ciphertext, el, passphrase)
 }
 
 func (r fileRepository) GetLine(key string, passphrase []byte) (string, error) {
@@ -130,43 +126,22 @@ func (r fileRepository) Put(key string) (io.WriteCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	filepath := path.Join(r.root, key+fileExtension)
-	if err := os.MkdirAll(path.Dir(filepath), dirPermission); err != nil {
+	ciphertext, err := r.fs.Create(key + fileExtension)
+	if err != nil {
 		return nil, err
 	}
-	return CreateEncrypted(filepath, filePermission, el)
-}
-
-func dirEmpty(name string) bool {
-	dir, err := os.Open(name)
-	if err != nil {
-		return false
-	}
-	defer dir.Close()
-	_, err = dir.Readdir(1)
-	return err == io.EOF
+	return WriteEncrypted(ciphertext, el)
 }
 
 func (r fileRepository) Remove(key string) error {
-	filepath := path.Join(r.root, key+fileExtension)
-	err := os.Remove(filepath)
-	if err != nil {
-		return err
-	}
-	if dirpath := path.Dir(filepath); dirpath != r.root && dirEmpty(dirpath) {
-		if err = os.Remove(dirpath); err != nil {
-			return err
-		}
-	}
-	return nil
+	return r.fs.Remove(key + fileExtension)
 }
 
 func (r fileRepository) Walk(walkFn func(file string)) error {
-	filepath.Walk(r.root, func(path string, info os.FileInfo, err error) error {
+	r.fs.Walk(func(path string, info os.FileInfo, err error) error {
 		if err != nil || info.IsDir() || filepath.Ext(path) != fileExtension {
 			return nil
 		}
-		path, _ = filepath.Rel(r.root, path)
 		walkFn(path[:len(path)-len(fileExtension)])
 		return nil
 	})

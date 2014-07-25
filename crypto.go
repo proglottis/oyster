@@ -102,11 +102,7 @@ func (f encryptedReader) Close() error {
 	return f.ciphertext.Close()
 }
 
-func OpenEncrypted(name string, el openpgp.EntityList, passphrase []byte) (io.ReadCloser, error) {
-	ciphertext, err := os.Open(name)
-	if err != nil {
-		return nil, err
-	}
+func ReadEncrypted(ciphertext io.ReadCloser, el openpgp.EntityList, passphrase []byte) (io.ReadCloser, error) {
 	md, err := openpgp.ReadMessage(ciphertext, el, func(keys []openpgp.Key, symmetric bool) ([]byte, error) {
 		if symmetric {
 			return nil, fmt.Errorf("No support for symmetrical encryption")
@@ -123,7 +119,7 @@ func OpenEncrypted(name string, el openpgp.EntityList, passphrase []byte) (io.Re
 }
 
 type encryptedWriter struct {
-	ciphertext io.ReadCloser
+	ciphertext io.Closer
 	plaintext  io.WriteCloser
 }
 
@@ -137,11 +133,7 @@ func (w encryptedWriter) Close() error {
 	return nil
 }
 
-func CreateEncrypted(name string, perm os.FileMode, el openpgp.EntityList) (io.WriteCloser, error) {
-	ciphertext, err := os.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_TRUNC, perm)
-	if err != nil {
-		return nil, err
-	}
+func WriteEncrypted(ciphertext io.WriteCloser, el openpgp.EntityList) (io.WriteCloser, error) {
 	plaintext, err := openpgp.Encrypt(ciphertext, el, nil, nil, nil)
 	if err != nil {
 		return nil, err
