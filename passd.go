@@ -199,9 +199,7 @@ func main() {
 			Name:  "server",
 			Usage: "Start password daemon",
 			Action: func(c *cli.Context) {
-				if err := RunServer(repo); err != nil {
-					panic(err)
-				}
+				RunServer(repo)
 			},
 		},
 	}

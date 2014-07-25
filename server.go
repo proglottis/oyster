@@ -2,44 +2,30 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"os"
 )
 
 import (
-	"github.com/gorilla/handlers"
+	"github.com/codegangsta/negroni"
 )
 
 const (
 	defaultPort = "45566"
 )
 
-func RunServer(repo Repository) error {
+func RunServer(repo Repository) {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
 	}
-	http.Handle("/keys", defaultHandler(&keysHandler{repo: repo}))
-	return http.ListenAndServe("localhost:"+port, nil)
-}
+	mux := http.NewServeMux()
+	mux.Handle("/keys", &keysHandler{repo: repo})
 
-func defaultHandler(handler http.Handler) http.Handler {
-	return handlers.CombinedLoggingHandler(os.Stdout, &panicHandler{next: handler})
-}
-
-type panicHandler struct {
-	next http.Handler
-}
-
-func (h panicHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	defer func() {
-		if r := recover(); r != nil {
-			http.Error(w, fmt.Sprintf("%s", r), http.StatusInternalServerError)
-		}
-	}()
-	h.next.ServeHTTP(w, r)
+	n := negroni.Classic()
+	n.UseHandler(mux)
+	n.Run("localhost:" + port)
 }
 
 type item struct {
