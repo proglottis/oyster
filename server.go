@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 )
 
@@ -21,8 +21,7 @@ func RunServer(repo Repository) error {
 	if port == "" {
 		port = defaultPort
 	}
-	http.Handle("/keys", defaultHandler(http.StripPrefix("/keys", &keysHandler{repo: repo})))
-	http.Handle("/keys/", defaultHandler(http.StripPrefix("/keys", &keyHandler{repo: repo})))
+	http.Handle("/keys", defaultHandler(&keysHandler{repo: repo}))
 	return http.ListenAndServe("localhost:"+port, nil)
 }
 
@@ -55,44 +54,23 @@ type keysHandler struct {
 func (h keysHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
-		h.GetKeys(w, r)
-	default:
-		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-	}
-}
-
-func (h keysHandler) GetKeys(w http.ResponseWriter, r *http.Request) {
-	items := make([]item, 0)
-	h.repo.Walk(func(file string) {
-		items = append(items, item{
-			Key: file,
-		})
-	})
-	JSON(w, items)
-}
-
-type keyHandler struct {
-	repo Repository
-}
-
-func (h keyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case "POST":
 		h.GetKey(w, r)
 	default:
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	}
 }
 
-func (h keyHandler) GetKey(w http.ResponseWriter, r *http.Request) {
-	passphrase := []byte(r.PostForm.Get("passphrase"))
-	key := r.URL.Path
-	plaintext, err := h.repo.Get(key, passphrase)
+func (h keysHandler) GetKey(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		panic(err)
+	}
+	keyurl, err := url.Parse(r.PostForm.Get("url"))
 	if err != nil {
 		panic(err)
 	}
-	defer plaintext.Close()
-	value, err := ioutil.ReadAll(plaintext)
+	passphrase := []byte(r.PostForm.Get("passphrase"))
+	key := keyurl.Host + keyurl.Path
+	value, err := h.repo.GetLine(key, passphrase)
 	if err != nil {
 		panic(err)
 	}
