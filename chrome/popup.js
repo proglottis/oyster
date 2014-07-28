@@ -1,4 +1,6 @@
-(function() {
+(function () {
+  'use strict';
+
   $(document).on('submit', 'form', function(event){
     event.preventDefault();
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
@@ -15,4 +17,4 @@
       });
     });
   });
-})();
+}());
