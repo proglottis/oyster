@@ -24,6 +24,7 @@ func RunServer(repo Repository) {
 	mux.Handle("/keys", &keysHandler{repo: repo})
 
 	n := negroni.Classic()
+	n.Use(negroni.HandlerFunc(noCache))
 	n.UseHandler(mux)
 	n.Run("localhost:" + port)
 }
@@ -63,11 +64,16 @@ func (h keysHandler) GetKey(w http.ResponseWriter, r *http.Request) {
 	JSON(w, item{Key: key, Value: value})
 }
 
+func noCache(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	w.Header().Set("Cache-Control", "max-age=0, no-store, no-cache")
+	next(w, r)
+}
+
 func JSON(w http.ResponseWriter, v interface{}) {
 	bytes, err := json.Marshal(v)
 	if err != nil {
 		panic(err)
 	}
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Write(bytes)
 }
