@@ -17,11 +17,15 @@ import (
 )
 
 func repositoryHome() string {
-	user, err := user.Current()
-	if err != nil {
-		panic(err)
+	home := os.Getenv("PASSDHOME")
+	if home == "" {
+		user, err := user.Current()
+		if err != nil {
+			panic(err)
+		}
+		home = path.Join(user.HomeDir, ".passd")
 	}
-	return path.Join(user.HomeDir, ".passd")
+	return home
 }
 
 func copyThenClear(text string, d time.Duration) error {
