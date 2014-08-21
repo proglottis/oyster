@@ -1,2 +1,4 @@
 /passd
 /.gnupg
+.envrc
+.passd
