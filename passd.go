@@ -122,10 +122,30 @@ func main() {
 			fmt.Println(file)
 		})
 	}
+
+	cli.CommandHelpTemplate = `NAME:
+  {{.Name}} - {{.Usage}}
+
+USAGE:
+  passd {{.Name}}{{if .Flags}} [command options]{{end}} [arguments...]{{if .Description}}
+
+DESCRIPTION:
+  {{.Description}}{{end}}{{if .Flags}}
+
+OPTIONS:
+  {{range .Flags}}{{.}}
+  {{end}}{{ end }}
+`
+
 	app.Commands = []cli.Command{
 		{
 			Name:  "init",
 			Usage: "Setup passd",
+			Description: `Create passd home directory. If PASSDHOME is set it will be used instead of "~/.passd".
+
+EXAMPLE:
+   passd init me@example.org
+`,
 			Action: func(c *cli.Context) {
 				args := c.Args()
 				if !args.Present() {
