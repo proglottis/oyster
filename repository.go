@@ -4,8 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
+
+	"github.com/kr/fs"
 )
 
 const (
@@ -138,12 +139,14 @@ func (r fileRepository) Remove(key string) error {
 }
 
 func (r fileRepository) Walk(walkFn func(file string)) error {
-	r.fs.Walk(func(path string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() || filepath.Ext(path) != fileExtension {
-			return nil
+	walker := fs.WalkFS(".", r.fs)
+	for walker.Step() {
+		err := walker.Err()
+		path := walker.Path()
+		if err != nil || walker.Stat().IsDir() || filepath.Ext(path) != fileExtension {
+			continue
 		}
 		walkFn(path[:len(path)-len(fileExtension)])
-		return nil
-	})
+	}
 	return nil
 }

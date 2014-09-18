@@ -2,9 +2,12 @@ package main
 
 import (
 	"io"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
+
+	"github.com/kr/fs"
 )
 
 const (
@@ -13,10 +16,10 @@ const (
 )
 
 type FileSystem interface {
+	fs.FileSystem
 	Open(name string) (io.ReadCloser, error)
 	Create(name string) (io.WriteCloser, error)
 	Remove(name string) error
-	Walk(walkFn filepath.WalkFunc) error
 }
 
 type directoryFS struct {
@@ -27,12 +30,17 @@ func NewDirectory(root string) FileSystem {
 	return &directoryFS{root: root}
 }
 
+func (fs directoryFS) resolve(name string) string {
+	name = path.Clean("/" + name)
+	return path.Join(fs.root, name)
+}
+
 func (fs directoryFS) Open(name string) (io.ReadCloser, error) {
-	return os.Open(path.Join(fs.root, name))
+	return os.Open(fs.resolve(name))
 }
 
 func (fs directoryFS) Create(name string) (io.WriteCloser, error) {
-	filepath := path.Join(fs.root, name)
+	filepath := fs.resolve(name)
 	if err := os.MkdirAll(path.Dir(filepath), dirPermission); err != nil {
 		return nil, err
 	}
@@ -40,7 +48,7 @@ func (fs directoryFS) Create(name string) (io.WriteCloser, error) {
 }
 
 func (fs directoryFS) Remove(name string) error {
-	filepath := path.Join(fs.root, name)
+	filepath := fs.resolve(name)
 	if err := os.Remove(filepath); err != nil {
 		return err
 	}
@@ -62,9 +70,14 @@ func dirEmpty(name string) bool {
 	return err == io.EOF
 }
 
-func (fs directoryFS) Walk(walkFn filepath.WalkFunc) error {
-	return filepath.Walk(fs.root, func(path string, info os.FileInfo, err error) error {
-		path, _ = filepath.Rel(fs.root, path)
-		return walkFn(path, info, err)
-	})
+func (fs directoryFS) ReadDir(name string) ([]os.FileInfo, error) {
+	return ioutil.ReadDir(fs.resolve(name))
+}
+
+func (fs directoryFS) Lstat(name string) (os.FileInfo, error) {
+	return os.Lstat(fs.resolve(name))
+}
+
+func (fs directoryFS) Join(elem ...string) string {
+	return filepath.Join(elem...)
 }

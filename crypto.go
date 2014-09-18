@@ -7,9 +7,7 @@ import (
 	"os/user"
 	"path"
 	"strings"
-)
 
-import (
 	"code.google.com/p/go.crypto/openpgp"
 )
 

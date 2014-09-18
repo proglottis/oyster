@@ -8,9 +8,7 @@ import (
 	"os/user"
 	"path"
 	"time"
-)
 
-import (
 	"code.google.com/p/go.crypto/ssh/terminal"
 	"github.com/atotto/clipboard"
 	"github.com/codegangsta/cli"

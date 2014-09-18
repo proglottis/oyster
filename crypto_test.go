@@ -1,8 +1,9 @@
 package main
 
 import (
-	"code.google.com/p/go.crypto/openpgp"
 	"testing"
+
+	"code.google.com/p/go.crypto/openpgp"
 )
 
 func TestEntityMatchesId(t *testing.T) {

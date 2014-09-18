@@ -6,9 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-)
 
-import (
 	"github.com/codegangsta/negroni"
 )
 
