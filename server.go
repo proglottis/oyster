@@ -58,7 +58,7 @@ func (h keysHandler) GetKey(w http.ResponseWriter, r *http.Request) {
 	}
 	passphrase := []byte(r.PostForm.Get("passphrase"))
 	key := keyurl.Host + keyurl.Path
-	value, err := h.repo.GetLine(key, passphrase)
+	value, err := h.repo.Map(key, passphrase)
 	if err != nil {
 		panic(err)
 	}
@@ -74,7 +74,7 @@ func (h keysHandler) PutKey(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	key := keyurl.Host + keyurl.Path
-	plaintext, err := h.repo.Put(key)
+	plaintext, err := h.repo.Create(key)
 	if err != nil {
 		panic(err)
 	}

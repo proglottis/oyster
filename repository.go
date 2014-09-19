@@ -16,9 +16,10 @@ const (
 
 type Repository interface {
 	Init(ids []string) error
-	Get(key string, passphrase []byte) (io.ReadCloser, error)
-	GetLine(key string, passphrase []byte) (string, error)
-	Put(key string) (io.WriteCloser, error)
+	Open(key string, passphrase []byte) (io.ReadCloser, error)
+	Line(key string, passphrase []byte) (string, error)
+	Map(key string, passphrase []byte) (map[string]string, error)
+	Create(key string) (io.WriteCloser, error)
 	Remove(key string) error
 	Walk(walkFn func(file string)) error
 }
@@ -91,7 +92,7 @@ func (r fileRepository) Ids() ([]string, error) {
 	return ids, scanner.Err()
 }
 
-func (r fileRepository) Get(key string, passphrase []byte) (io.ReadCloser, error) {
+func (r fileRepository) Open(key string, passphrase []byte) (io.ReadCloser, error) {
 	ids, err := r.Ids()
 	if err != nil {
 		return nil, err
@@ -107,8 +108,8 @@ func (r fileRepository) Get(key string, passphrase []byte) (io.ReadCloser, error
 	return ReadEncrypted(ciphertext, el, passphrase)
 }
 
-func (r fileRepository) GetLine(key string, passphrase []byte) (string, error) {
-	plaintext, err := r.Get(key, passphrase)
+func (r fileRepository) Line(key string, passphrase []byte) (string, error) {
+	plaintext, err := r.Open(key, passphrase)
 	if err != nil {
 		return "", err
 	}
@@ -118,7 +119,28 @@ func (r fileRepository) GetLine(key string, passphrase []byte) (string, error) {
 	return scanner.Text(), scanner.Err()
 }
 
-func (r fileRepository) Put(key string) (io.WriteCloser, error) {
+func (r fileRepository) Map(key string, passphrase []byte) (map[string]string, error) {
+	fileinfos, err := r.fs.ReadDir(key)
+	if err != nil {
+		return nil, err
+	}
+	keys := make(map[string]string)
+	for _, fileinfo := range fileinfos {
+		name := fileinfo.Name()
+		if fileinfo.IsDir() || filepath.Ext(name) != fileExtension {
+			continue
+		}
+		valueKey := name[:len(name)-len(fileExtension)]
+		value, err := r.Line(r.fs.Join(key, valueKey), passphrase)
+		if err != nil {
+			panic(err)
+		}
+		keys[valueKey] = value
+	}
+	return keys, nil
+}
+
+func (r fileRepository) Create(key string) (io.WriteCloser, error) {
 	ids, err := r.Ids()
 	if err != nil {
 		return nil, err
@@ -141,9 +163,11 @@ func (r fileRepository) Remove(key string) error {
 func (r fileRepository) Walk(walkFn func(file string)) error {
 	walker := fs.WalkFS(".", r.fs)
 	for walker.Step() {
-		err := walker.Err()
+		if err := walker.Err(); err != nil {
+			return err
+		}
 		path := walker.Path()
-		if err != nil || walker.Stat().IsDir() || filepath.Ext(path) != fileExtension {
+		if walker.Stat().IsDir() || filepath.Ext(path) != fileExtension {
 			continue
 		}
 		walkFn(path[:len(path)-len(fileExtension)])

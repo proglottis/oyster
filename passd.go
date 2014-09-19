@@ -163,7 +163,7 @@ EXAMPLE:
 				if err != nil {
 					panic(err)
 				}
-				plaintext, err := repo.Get(c.Args().First(), passphrase)
+				plaintext, err := repo.Open(c.Args().First(), passphrase)
 				if err != nil {
 					panic(err)
 				}
@@ -180,7 +180,7 @@ EXAMPLE:
 				if err != nil {
 					panic(err)
 				}
-				password, err := repo.GetLine(c.Args().First(), passphrase)
+				password, err := repo.Line(c.Args().First(), passphrase)
 				if err != nil {
 					panic(err)
 				}
@@ -195,7 +195,7 @@ EXAMPLE:
 			Name:  "put",
 			Usage: "Store a password",
 			Action: func(c *cli.Context) {
-				plaintext, err := repo.Put(c.Args().First())
+				plaintext, err := repo.Create(c.Args().First())
 				if err != nil {
 					panic(err)
 				}
