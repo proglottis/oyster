@@ -11,7 +11,7 @@
       .done(function(data) {
         chrome.tabs.sendMessage(tab.id, {
           type: "SET_PASSWORD",
-          text: data.value
+          form: data.value
         });
         window.close();
       });
