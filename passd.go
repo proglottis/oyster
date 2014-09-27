@@ -12,6 +12,7 @@ import (
 	"code.google.com/p/go.crypto/ssh/terminal"
 	"github.com/atotto/clipboard"
 	"github.com/codegangsta/cli"
+	"github.com/proglottis/rwvfs"
 )
 
 func repositoryHome() string {
@@ -110,7 +111,7 @@ func getPassword() ([]byte, error) {
 }
 
 func main() {
-	repo := NewRepository(NewDirectory(repositoryHome()))
+	repo := NewRepository(Walkable(rwvfs.OSPerm(repositoryHome(), 0600, 0700)))
 	app := cli.NewApp()
 	app.Name = "passd"
 	app.Usage = "Password daemon"

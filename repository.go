@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/kr/fs"
+	"github.com/proglottis/rwvfs"
 )
 
 const (
@@ -25,10 +26,10 @@ type Repository interface {
 }
 
 type fileRepository struct {
-	fs FileSystem
+	fs rwvfs.WalkableFileSystem
 }
 
-func NewRepository(fs FileSystem) Repository {
+func NewRepository(fs rwvfs.WalkableFileSystem) Repository {
 	return &fileRepository{fs: fs}
 }
 
@@ -63,6 +64,9 @@ func (r fileRepository) Init(ids []string) error {
 		return err
 	}
 	if err := checkSecureKeyRingIds(ids); err != nil {
+		return err
+	}
+	if err := rwvfs.MkdirAll(r.fs, "/"); err != nil {
 		return err
 	}
 	idfile, err := r.fs.Create(idFilename)
@@ -147,6 +151,9 @@ func (r fileRepository) Create(key string) (io.WriteCloser, error) {
 	}
 	el, err := EntitiesFromKeyRing(PublicKeyRingName(), ids)
 	if err != nil {
+		return nil, err
+	}
+	if err := rwvfs.MkdirAll(r.fs, filepath.Dir(key)); err != nil {
 		return nil, err
 	}
 	ciphertext, err := r.fs.Create(key + fileExtension)
