@@ -2,17 +2,40 @@ package main
 
 import (
 	"testing"
-
-	"code.google.com/p/go.crypto/openpgp"
 )
 
+func TestGpgRepoSecureKeyRing(t *testing.T) {
+	repo := NewGpgRepo("gpghome")
+	el, err := repo.SecureKeyRing([]string{"test@example.com"})
+	if err != nil {
+		t.Error(err)
+	}
+	if len(el) != 1 {
+		t.Error("expected 1 entity, got", len(el))
+	}
+}
+
+func TestGpgRepoPublicKeyRing(t *testing.T) {
+	repo := NewGpgRepo("gpghome")
+	el, err := repo.PublicKeyRing([]string{"test@example.com"})
+	if err != nil {
+		t.Error(err)
+	}
+	if len(el) != 1 {
+		t.Error("expected 1 entity, got", len(el))
+	}
+}
+
 func TestEntityMatchesId(t *testing.T) {
-	entity, _ := openpgp.NewEntity("Bob", "", "bob@example.com", nil)
-	entity.PrivateKey = nil
+	el, err := ReadKeyRing("gpghome/pubring.gpg")
+	if err != nil {
+		t.Error(err)
+	}
+	entity := el[0]
 	keyid := entity.PrimaryKey.KeyIdString()
 	keyidshort := entity.PrimaryKey.KeyIdShortString()
 
-	if !EntityMatchesId(entity, "bob@example.com") {
+	if !EntityMatchesId(entity, "test@example.com") {
 		t.Error("must match by email")
 	}
 	if !EntityMatchesId(entity, keyid) {

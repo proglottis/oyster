@@ -27,6 +27,18 @@ func repositoryHome() string {
 	return home
 }
 
+func gpgHome() string {
+	home := os.Getenv("GNUPGHOME")
+	if home == "" {
+		user, err := user.Current()
+		if err != nil {
+			panic(err)
+		}
+		home = path.Join(user.HomeDir, ".gnupg")
+	}
+	return home
+}
+
 func copyThenClear(text string, d time.Duration) error {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt, os.Kill)
@@ -111,7 +123,8 @@ func getPassword() ([]byte, error) {
 }
 
 func main() {
-	repo := NewRepository(Walkable(rwvfs.OSPerm(repositoryHome(), 0600, 0700)))
+	gpg := NewGpgRepo(gpgHome())
+	repo := NewRepository(Walkable(rwvfs.OSPerm(repositoryHome(), 0600, 0700)), gpg)
 	app := cli.NewApp()
 	app.Name = "passd"
 	app.Usage = "Password daemon"

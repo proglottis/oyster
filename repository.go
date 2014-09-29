@@ -26,44 +26,46 @@ type Repository interface {
 }
 
 type fileRepository struct {
-	fs rwvfs.WalkableFileSystem
+	fs       rwvfs.WalkableFileSystem
+	entities EntityRepo
 }
 
-func NewRepository(fs rwvfs.WalkableFileSystem) Repository {
-	return &fileRepository{fs: fs}
+func NewRepository(fs rwvfs.WalkableFileSystem, entities EntityRepo) Repository {
+	return &fileRepository{
+		fs:       fs,
+		entities: entities,
+	}
 }
 
-func checkPublicKeyRingIds(ids []string) error {
-	keyringname := PublicKeyRingName()
-	el, err := ReadKeyRing(keyringname)
+func (r fileRepository) checkPublicKeyRingIds(ids []string) error {
+	el, err := r.entities.PublicKeyRing(ids)
 	if err != nil {
 		return err
 	}
 	for _, id := range ids {
 		if !IdMatchesAnyEntity(id, el) {
-			return fmt.Errorf("No matching public key %s in %s", id, keyringname)
+			return fmt.Errorf("No matching public key %s", id)
 		}
 	}
 	return nil
 }
 
-func checkSecureKeyRingIds(ids []string) error {
-	keyringname := SecureKeyRingName()
-	el, err := EntitiesFromKeyRing(keyringname, ids)
+func (r fileRepository) checkSecureKeyRingIds(ids []string) error {
+	el, err := r.entities.SecureKeyRing(ids)
 	if err != nil {
 		return err
 	}
 	if len(el) < 1 {
-		return fmt.Errorf("No matching secure keys in %s", keyringname)
+		return fmt.Errorf("No matching secure keys")
 	}
 	return nil
 }
 
 func (r fileRepository) Init(ids []string) error {
-	if err := checkPublicKeyRingIds(ids); err != nil {
+	if err := r.checkPublicKeyRingIds(ids); err != nil {
 		return err
 	}
-	if err := checkSecureKeyRingIds(ids); err != nil {
+	if err := r.checkSecureKeyRingIds(ids); err != nil {
 		return err
 	}
 	if err := rwvfs.MkdirAll(r.fs, "/"); err != nil {
@@ -101,7 +103,7 @@ func (r fileRepository) Open(key string, passphrase []byte) (io.ReadCloser, erro
 	if err != nil {
 		return nil, err
 	}
-	el, err := EntitiesFromKeyRing(SecureKeyRingName(), ids)
+	el, err := r.entities.SecureKeyRing(ids)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +151,7 @@ func (r fileRepository) Create(key string) (io.WriteCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	el, err := EntitiesFromKeyRing(PublicKeyRingName(), ids)
+	el, err := r.entities.PublicKeyRing(ids)
 	if err != nil {
 		return nil, err
 	}

@@ -4,31 +4,31 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/user"
 	"path"
 	"strings"
 
 	"code.google.com/p/go.crypto/openpgp"
 )
 
-func gpgHome() string {
-	home := os.Getenv("GNUPGHOME")
-	if home == "" {
-		user, err := user.Current()
-		if err != nil {
-			panic(err)
-		}
-		home = path.Join(user.HomeDir, ".gnupg")
-	}
-	return home
+type EntityRepo interface {
+	SecureKeyRing(ids []string) (openpgp.EntityList, error)
+	PublicKeyRing(ids []string) (openpgp.EntityList, error)
 }
 
-func SecureKeyRingName() string {
-	return path.Join(gpgHome(), "secring.gpg")
+type gpgRepo struct {
+	root string
 }
 
-func PublicKeyRingName() string {
-	return path.Join(gpgHome(), "pubring.gpg")
+func NewGpgRepo(root string) EntityRepo {
+	return gpgRepo{root: root}
+}
+
+func (r gpgRepo) SecureKeyRing(ids []string) (openpgp.EntityList, error) {
+	return EntitiesFromKeyRing(path.Join(r.root, "secring.gpg"), ids)
+}
+
+func (r gpgRepo) PublicKeyRing(ids []string) (openpgp.EntityList, error) {
+	return EntitiesFromKeyRing(path.Join(r.root, "pubring.gpg"), ids)
 }
 
 func EntityMatchesId(entity *openpgp.Entity, id string) bool {
