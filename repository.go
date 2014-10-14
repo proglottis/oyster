@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"path/filepath"
 
@@ -15,106 +14,29 @@ const (
 	fileExtension = ".gpg"
 )
 
-type Repository interface {
-	Init(ids []string) error
-	Open(key string, passphrase []byte) (io.ReadCloser, error)
-	Line(key string, passphrase []byte) (string, error)
-	Map(key string, passphrase []byte) (map[string]string, error)
-	Create(key string) (io.WriteCloser, error)
-	Remove(key string) error
-	Walk(walkFn func(file string)) error
+type Repository struct {
+	fs *CryptoFS
 }
 
-type fileRepository struct {
-	fs       rwvfs.WalkableFileSystem
-	entities EntityRepo
+func NewRepository(fs *CryptoFS) *Repository {
+	return &Repository{fs: fs}
 }
 
-func NewRepository(fs rwvfs.WalkableFileSystem, entities EntityRepo) Repository {
-	return &fileRepository{
-		fs:       fs,
-		entities: entities,
-	}
-}
-
-func (r fileRepository) checkPublicKeyRingIds(ids []string) error {
-	el, err := r.entities.PublicKeyRing(ids)
-	if err != nil {
-		return err
-	}
-	for _, id := range ids {
-		if !IdMatchesAnyEntity(id, el) {
-			return fmt.Errorf("No matching public key %s", id)
-		}
-	}
-	return nil
-}
-
-func (r fileRepository) checkSecureKeyRingIds(ids []string) error {
-	el, err := r.entities.SecureKeyRing(ids)
-	if err != nil {
-		return err
-	}
-	if len(el) < 1 {
-		return fmt.Errorf("No matching secure keys")
-	}
-	return nil
-}
-
-func (r fileRepository) Init(ids []string) error {
-	if err := r.checkPublicKeyRingIds(ids); err != nil {
-		return err
-	}
-	if err := r.checkSecureKeyRingIds(ids); err != nil {
+func (r *Repository) Init(ids []string) error {
+	if err := r.fs.CheckIdentities(ids); err != nil {
 		return err
 	}
 	if err := rwvfs.MkdirAll(r.fs, "/"); err != nil {
 		return err
 	}
-	idfile, err := r.fs.Create(idFilename)
-	if err != nil {
-		return err
-	}
-	defer idfile.Close()
-	for _, id := range ids {
-		if _, err = io.WriteString(idfile, id+"\n"); err != nil {
-			return err
-		}
-	}
-	return nil
+	return r.fs.SetIdentities(ids)
 }
 
-func (r fileRepository) Ids() ([]string, error) {
-	file, err := r.fs.Open(idFilename)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	ids := []string{}
-	for scanner.Scan() {
-		ids = append(ids, scanner.Text())
-	}
-	return ids, scanner.Err()
+func (r *Repository) Open(key string, passphrase []byte) (io.ReadCloser, error) {
+	return r.fs.OpenEncrypted(key+fileExtension, passphrase)
 }
 
-func (r fileRepository) Open(key string, passphrase []byte) (io.ReadCloser, error) {
-	ids, err := r.Ids()
-	if err != nil {
-		return nil, err
-	}
-	el, err := r.entities.SecureKeyRing(ids)
-	if err != nil {
-		return nil, err
-	}
-	ciphertext, err := r.fs.Open(key + fileExtension)
-	if err != nil {
-		return nil, err
-	}
-	return ReadEncrypted(ciphertext, el, passphrase)
-}
-
-func (r fileRepository) Line(key string, passphrase []byte) (string, error) {
+func (r *Repository) Line(key string, passphrase []byte) (string, error) {
 	plaintext, err := r.Open(key, passphrase)
 	if err != nil {
 		return "", err
@@ -125,7 +47,7 @@ func (r fileRepository) Line(key string, passphrase []byte) (string, error) {
 	return scanner.Text(), scanner.Err()
 }
 
-func (r fileRepository) Map(key string, passphrase []byte) (map[string]string, error) {
+func (r *Repository) Map(key string, passphrase []byte) (map[string]string, error) {
 	fileinfos, err := r.fs.ReadDir(key)
 	if err != nil {
 		return nil, err
@@ -146,30 +68,18 @@ func (r fileRepository) Map(key string, passphrase []byte) (map[string]string, e
 	return keys, nil
 }
 
-func (r fileRepository) Create(key string) (io.WriteCloser, error) {
-	ids, err := r.Ids()
-	if err != nil {
-		return nil, err
-	}
-	el, err := r.entities.PublicKeyRing(ids)
-	if err != nil {
-		return nil, err
-	}
+func (r *Repository) Create(key string) (io.WriteCloser, error) {
 	if err := rwvfs.MkdirAll(r.fs, filepath.Dir(key)); err != nil {
 		return nil, err
 	}
-	ciphertext, err := r.fs.Create(key + fileExtension)
-	if err != nil {
-		return nil, err
-	}
-	return WriteEncrypted(ciphertext, el)
+	return r.fs.CreateEncrypted(key + fileExtension)
 }
 
-func (r fileRepository) Remove(key string) error {
+func (r *Repository) Remove(key string) error {
 	return r.fs.Remove(key + fileExtension)
 }
 
-func (r fileRepository) Walk(walkFn func(file string)) error {
+func (r *Repository) Walk(walkFn func(file string)) error {
 	walker := fs.WalkFS(".", r.fs)
 	for walker.Step() {
 		if err := walker.Err(); err != nil {

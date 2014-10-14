@@ -14,7 +14,7 @@ const (
 	defaultPort = "45566"
 )
 
-func RunServer(repo Repository) {
+func RunServer(repo *Repository) {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
@@ -34,7 +34,7 @@ type item struct {
 }
 
 type keysHandler struct {
-	repo Repository
+	repo *Repository
 }
 
 func (h keysHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

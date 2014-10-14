@@ -9,8 +9,8 @@ import (
 
 func TestRepositoryCreateOpen(t *testing.T) {
 	gpg := NewGpgRepo("gpghome")
-	fs := Walkable(rwvfs.Map(map[string]string{}))
-	repo := NewRepository(fs, gpg)
+	fs := NewCryptoFS(rwvfs.Map(map[string]string{}), gpg)
+	repo := NewRepository(fs)
 
 	if err := repo.Init([]string{"test@example.com"}); err != nil {
 		t.Error(err)

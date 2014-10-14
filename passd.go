@@ -62,7 +62,7 @@ func copyThenClear(text string, d time.Duration) error {
 	return nil
 }
 
-func bashCompleteKeys(repo Repository) func(*cli.Context) {
+func bashCompleteKeys(repo *Repository) func(*cli.Context) {
 	return func(c *cli.Context) {
 		if len(c.Args()) > 0 {
 			return
@@ -119,12 +119,12 @@ func getPassword() ([]byte, error) {
 	case password := <-passwords:
 		return password.Password, password.Err
 	}
-	panic("unreachable")
 }
 
 func main() {
 	gpg := NewGpgRepo(gpgHome())
-	repo := NewRepository(Walkable(rwvfs.OSPerm(repositoryHome(), 0600, 0700)), gpg)
+	fs := NewCryptoFS(rwvfs.OSPerm(repositoryHome(), 0600, 0700), gpg)
+	repo := NewRepository(fs)
 	app := cli.NewApp()
 	app.Name = "passd"
 	app.Usage = "Password daemon"

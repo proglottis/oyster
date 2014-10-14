@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"os"
@@ -8,28 +9,8 @@ import (
 	"strings"
 
 	"code.google.com/p/go.crypto/openpgp"
+	"github.com/proglottis/rwvfs"
 )
-
-type EntityRepo interface {
-	SecureKeyRing(ids []string) (openpgp.EntityList, error)
-	PublicKeyRing(ids []string) (openpgp.EntityList, error)
-}
-
-type gpgRepo struct {
-	root string
-}
-
-func NewGpgRepo(root string) EntityRepo {
-	return gpgRepo{root: root}
-}
-
-func (r gpgRepo) SecureKeyRing(ids []string) (openpgp.EntityList, error) {
-	return EntitiesFromKeyRing(path.Join(r.root, "secring.gpg"), ids)
-}
-
-func (r gpgRepo) PublicKeyRing(ids []string) (openpgp.EntityList, error) {
-	return EntitiesFromKeyRing(path.Join(r.root, "pubring.gpg"), ids)
-}
 
 func EntityMatchesId(entity *openpgp.Entity, id string) bool {
 	for _, identity := range entity.Identities {
@@ -137,4 +118,118 @@ func WriteEncrypted(ciphertext io.WriteCloser, el openpgp.EntityList) (io.WriteC
 		return nil, err
 	}
 	return &encryptedWriter{ciphertext, plaintext}, nil
+}
+
+type EntityRepo interface {
+	SecureKeyRing(ids []string) (openpgp.EntityList, error)
+	PublicKeyRing(ids []string) (openpgp.EntityList, error)
+}
+
+type gpgRepo struct {
+	root string
+}
+
+func NewGpgRepo(root string) EntityRepo {
+	return gpgRepo{root: root}
+}
+
+func (r gpgRepo) SecureKeyRing(ids []string) (openpgp.EntityList, error) {
+	return EntitiesFromKeyRing(path.Join(r.root, "secring.gpg"), ids)
+}
+
+func (r gpgRepo) PublicKeyRing(ids []string) (openpgp.EntityList, error) {
+	return EntitiesFromKeyRing(path.Join(r.root, "pubring.gpg"), ids)
+}
+
+type CryptoFS struct {
+	rwvfs.FileSystem
+	entities EntityRepo
+}
+
+func NewCryptoFS(fs rwvfs.FileSystem, entities EntityRepo) *CryptoFS {
+	return &CryptoFS{FileSystem: fs, entities: entities}
+}
+
+func (fs CryptoFS) Identities() ([]string, error) {
+	f, err := fs.Open(idFilename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	ids := []string{}
+	for scanner.Scan() {
+		ids = append(ids, scanner.Text())
+	}
+	return ids, scanner.Err()
+}
+
+func (fs CryptoFS) CheckIdentities(ids []string) error {
+	el, err := fs.entities.PublicKeyRing(ids)
+	if err != nil {
+		return err
+	}
+	for _, id := range ids {
+		if !IdMatchesAnyEntity(id, el) {
+			return fmt.Errorf("No matching public key %s", id)
+		}
+	}
+	el, err = fs.entities.SecureKeyRing(ids)
+	if err != nil {
+		return err
+	}
+	if len(el) < 1 {
+		return fmt.Errorf("No matching secure keys")
+	}
+	return nil
+}
+
+func (fs CryptoFS) SetIdentities(ids []string) error {
+	f, err := fs.Create(idFilename)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	for _, id := range ids {
+		if _, err = io.WriteString(f, id+"\n"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (fs CryptoFS) OpenEncrypted(name string, passphrase []byte) (io.ReadCloser, error) {
+	ciphertext, err := fs.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	ids, err := fs.Identities()
+	if err != nil {
+		return nil, err
+	}
+	el, err := fs.entities.SecureKeyRing(ids)
+	if err != nil {
+		return nil, err
+	}
+	return ReadEncrypted(ciphertext, el, passphrase)
+}
+
+func (fs CryptoFS) CreateEncrypted(name string) (io.WriteCloser, error) {
+	ciphertext, err := fs.Create(name)
+	if err != nil {
+		return nil, err
+	}
+	ids, err := fs.Identities()
+	if err != nil {
+		return nil, err
+	}
+	el, err := fs.entities.PublicKeyRing(ids)
+	if err != nil {
+		return nil, err
+	}
+	return WriteEncrypted(ciphertext, el)
+}
+
+func (fs CryptoFS) Join(elem ...string) string {
+	return path.Join(elem...)
 }
