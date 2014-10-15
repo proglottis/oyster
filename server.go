@@ -1,11 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
-	"io"
 	"net/http"
-	"net/url"
 	"os"
+	"strings"
 
 	"github.com/codegangsta/negroni"
 )
@@ -14,7 +15,7 @@ const (
 	defaultPort = "45566"
 )
 
-func RunServer(repo *Repository) {
+func RunServer(repo *FormRepo) {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
@@ -28,13 +29,8 @@ func RunServer(repo *Repository) {
 	n.Run("localhost:" + port)
 }
 
-type item struct {
-	Key   string      `json:"key"`
-	Value interface{} `json:"value,omitempty"`
-}
-
 type keysHandler struct {
-	repo *Repository
+	repo *FormRepo
 }
 
 func (h keysHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -49,39 +45,44 @@ func (h keysHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h keysHandler) GetKey(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
+	var form *Form
+	decoder := json.NewDecoder(r.Body)
+	formRequest := FormRequest{}
+	if err := decoder.Decode(&formRequest); err != nil {
 		panic(err)
 	}
-	keyurl, err := url.Parse(r.PostForm.Get("url"))
-	if err != nil {
-		panic(err)
+	basic := strings.TrimPrefix(r.Header.Get("Authorization"), "Basic ")
+	if basic != "" {
+		decoded, err := base64.StdEncoding.DecodeString(basic)
+		if err != nil {
+			panic(err)
+		}
+		pair := bytes.Split(decoded, []byte(":"))
+		passphrase := pair[1]
+		form, err = h.repo.Get(&formRequest, passphrase)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		var err error
+		form, err = h.repo.Fields(&formRequest)
+		if err != nil {
+			panic(err)
+		}
 	}
-	passphrase := []byte(r.PostForm.Get("passphrase"))
-	key := keyurl.Host + keyurl.Path
-	value, err := h.repo.Map(key, passphrase)
-	if err != nil {
-		panic(err)
-	}
-	JSON(w, item{Key: key, Value: value})
+	JSON(w, form)
 }
 
 func (h keysHandler) PutKey(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
+	decoder := json.NewDecoder(r.Body)
+	form := Form{}
+	if err := decoder.Decode(&form); err != nil {
 		panic(err)
 	}
-	keyurl, err := url.Parse(r.PostForm.Get("url"))
-	if err != nil {
+	if err := h.repo.Put(&form); err != nil {
 		panic(err)
 	}
-	key := keyurl.Host + keyurl.Path
-	plaintext, err := h.repo.Create(key)
-	if err != nil {
-		panic(err)
-	}
-	value := r.PostForm.Get("text")
-	io.WriteString(plaintext, value+"\n")
-	plaintext.Close()
-	JSON(w, item{Key: key, Value: value})
+	JSON(w, form)
 }
 
 func noCache(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {

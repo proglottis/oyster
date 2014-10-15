@@ -62,7 +62,7 @@ func copyThenClear(text string, d time.Duration) error {
 	return nil
 }
 
-func bashCompleteKeys(repo *Repository) func(*cli.Context) {
+func bashCompleteKeys(repo *FileRepo) func(*cli.Context) {
 	return func(c *cli.Context) {
 		if len(c.Args()) > 0 {
 			return
@@ -124,7 +124,8 @@ func getPassword() ([]byte, error) {
 func main() {
 	gpg := NewGpgRepo(gpgHome())
 	fs := NewCryptoFS(rwvfs.OSPerm(repositoryHome(), 0600, 0700), gpg)
-	repo := NewRepository(fs)
+	repo := NewFileRepo(fs)
+	forms := NewFormRepo(fs)
 	app := cli.NewApp()
 	app.Name = "passd"
 	app.Usage = "Password daemon"
@@ -164,7 +165,7 @@ EXAMPLE:
 					fmt.Println("Must provide at least one GPG ID")
 					return
 				}
-				if err := repo.Init(args); err != nil {
+				if err := InitRepo(fs, args); err != nil {
 					fmt.Println(err)
 				}
 			},
@@ -235,7 +236,7 @@ EXAMPLE:
 			Name:  "server",
 			Usage: "Start password daemon",
 			Action: func(c *cli.Context) {
-				RunServer(repo)
+				RunServer(forms)
 			},
 		},
 	}
