@@ -220,6 +220,7 @@ EXAMPLE:
 				}
 				interruptibleCopy(plaintext, os.Stdin)
 			},
+			BashComplete: bashCompleteKeys(repo),
 		},
 		{
 			Name:      "remove",
