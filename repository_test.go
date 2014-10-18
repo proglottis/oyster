@@ -42,7 +42,7 @@ func TestFileRepoCreateOpen(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = clearwrite.Write([]byte("password123"))
+	_, err = clearwrite.Write([]byte("password123\nThe best password"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,8 +60,17 @@ func TestFileRepoCreateOpen(t *testing.T) {
 
 	clearread.Close()
 
-	if string(text) != "password123" {
-		t.Error("Expected 'password123', got", string(text))
+	if string(text) != "password123\nThe best password" {
+		t.Error("Expected 'password123\\nThe best password', got", string(text))
+	}
+
+	line, err := repo.Line("test", []byte("password"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if line != "password123" {
+		t.Error("Expected 'password123', got", line)
 	}
 }
 
