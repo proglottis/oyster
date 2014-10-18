@@ -7,11 +7,19 @@
       var tab = tabs[0],
         password = $('#password').val();
 
-      $.post("http://localhost:45566/keys", {url: tab.url, passphrase: password})
+      $.ajax({
+        url: "http://localhost:45566/keys",
+        type: "POST",
+        data: JSON.stringify({url: tab.url}),
+        contentType: "application/json; charset=utf-8",
+        headers: {
+          "Authorization": "Basic " + btoa("passd:" + password)
+        }
+      })
       .done(function(data) {
         chrome.tabs.sendMessage(tab.id, {
-          type: "SET_PASSWORD",
-          form: data.value
+          type: "SET_FORM",
+          data: data
         });
         window.close();
       });

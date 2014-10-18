@@ -2,11 +2,13 @@
   'use strict';
 
   chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-    if (message.type && (message.type === "SET_PASSWORD")) {
-      for(var key in message.form) {
-        if(message.form.hasOwnProperty(key)) {
-          $("form [name='"+key+"']").val(message.form[key]);
+    if (message.type && (message.type === "SET_FORM")) {
+      var fields = message.data.fields;
+      for(var key in fields) {
+        if(!message.data.fields.hasOwnProperty(key)) {
+          continue;
         }
+        $("form [name='"+key+"']").val(fields[key]);
       }
     }
   });
