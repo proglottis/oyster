@@ -201,6 +201,9 @@ func (fs CryptoFS) SetIdentities(ids []string) error {
 func (fs CryptoFS) OpenEncrypted(name string, passphrase []byte) (io.ReadCloser, error) {
 	ciphertext, err := fs.Open(name)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 	ids, err := fs.Identities()

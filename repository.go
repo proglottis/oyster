@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"net/url"
 	"path/filepath"
@@ -13,6 +14,10 @@ import (
 const (
 	idFilename    = ".gpg-id"
 	fileExtension = ".gpg"
+)
+
+var (
+	ErrNotFound = errors.New("Not found")
 )
 
 func InitRepo(fs *CryptoFS, ids []string) error {
@@ -60,7 +65,7 @@ func (r *FormRepo) Get(request *FormRequest, passphrase []byte) (*Form, error) {
 	}
 	fileinfos, err := r.fs.ReadDir(request.Key)
 	if err != nil {
-		return nil, err
+		return nil, ErrNotFound
 	}
 	form := Form{
 		FormRequest: *request,
@@ -96,7 +101,7 @@ func (r *FormRepo) Fields(request *FormRequest) (*Form, error) {
 	}
 	fileinfos, err := r.fs.ReadDir(request.Key)
 	if err != nil {
-		return nil, err
+		return nil, ErrNotFound
 	}
 	form := Form{
 		FormRequest: *request,

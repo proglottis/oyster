@@ -49,24 +49,34 @@ func (h keysHandler) GetKey(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	formRequest := FormRequest{}
 	if err := decoder.Decode(&formRequest); err != nil {
-		panic(err)
+		JSONError(w, err.Error(), http.StatusBadRequest)
 	}
 	basic := strings.TrimPrefix(r.Header.Get("Authorization"), "Basic ")
 	if basic != "" {
 		decoded, err := base64.StdEncoding.DecodeString(basic)
 		if err != nil {
-			panic(err)
+			JSONError(w, err.Error(), http.StatusBadRequest)
 		}
 		pair := bytes.Split(decoded, []byte(":"))
 		passphrase := pair[1]
 		form, err = h.repo.Get(&formRequest, passphrase)
-		if err != nil {
+		switch err {
+		case nil: // Ignore
+		case ErrNotFound:
+			JSONError(w, err.Error(), http.StatusNotFound)
+			return
+		default:
 			panic(err)
 		}
 	} else {
 		var err error
 		form, err = h.repo.Fields(&formRequest)
-		if err != nil {
+		switch err {
+		case nil: // Ignore
+		case ErrNotFound:
+			JSONError(w, err.Error(), http.StatusNotFound)
+			return
+		default:
 			panic(err)
 		}
 	}
@@ -77,7 +87,7 @@ func (h keysHandler) PutKey(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	form := Form{}
 	if err := decoder.Decode(&form); err != nil {
-		panic(err)
+		JSONError(w, err.Error(), http.StatusBadRequest)
 	}
 	if err := h.repo.Put(&form); err != nil {
 		panic(err)
@@ -96,4 +106,13 @@ func JSON(w http.ResponseWriter, v interface{}) {
 	if err := encoder.Encode(v); err != nil {
 		panic(err)
 	}
+}
+
+type jsonError struct {
+	Message string `json:"message"`
+}
+
+func JSONError(w http.ResponseWriter, error string, code int) {
+	w.WriteHeader(code)
+	JSON(w, jsonError{Message: error})
 }

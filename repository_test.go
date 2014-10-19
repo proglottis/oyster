@@ -10,6 +10,10 @@ import (
 func TestFormRepoPutGet(t *testing.T) {
 	repo := setupFormRepo(t)
 
+	if _, err := repo.Get(&FormRequest{Key: "test"}, []byte("password")); err != ErrNotFound {
+		t.Error("Expected ErrNotFound, got", err)
+	}
+
 	writeform := &Form{
 		FormRequest: FormRequest{Key: "test"},
 		Fields: map[string]string{
@@ -37,6 +41,10 @@ func TestFormRepoPutGet(t *testing.T) {
 
 func TestFileRepoCreateOpen(t *testing.T) {
 	repo := setupFileRepo(t)
+
+	if _, err := repo.Open("test", []byte("password")); err != ErrNotFound {
+		t.Error("Expected ErrNotFound, got", err)
+	}
 
 	clearwrite, err := repo.Create("test")
 	if err != nil {

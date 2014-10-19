@@ -11,8 +11,10 @@
     .done(function(data) {
       chrome.browserAction.setBadgeText({text: "1", tabId: tabId});
     })
-    .fail(function() {
-      chrome.browserAction.setBadgeText({text: "Fail", tabId: tabId});
+    .fail(function(jqXHR) {
+      if (jqXHR.status !== 404) {
+        chrome.browserAction.setBadgeText({text: "Fail", tabId: tabId});
+      }
     });
   });
 }());
