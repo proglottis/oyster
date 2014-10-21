@@ -9,12 +9,7 @@
       contentType: "application/json; charset=utf-8"
     })
     .done(function(data) {
-      chrome.browserAction.setBadgeText({text: "1", tabId: tabId});
-    })
-    .fail(function(jqXHR) {
-      if (jqXHR.status !== 404) {
-        chrome.browserAction.setBadgeText({text: "Fail", tabId: tabId});
-      }
+      chrome.pageAction.show(tabId);
     });
   });
 }());
