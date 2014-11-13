@@ -8,7 +8,8 @@
   "permissions": [
     "http://localhost:45566/",
     "activeTab",
-    "tabs"
+    "tabs",
+    "contextMenus"
   ],
   "page_action": {
     "default_icon": "icon.png",

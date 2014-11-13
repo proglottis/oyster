@@ -17,6 +17,8 @@
         }
       })
       .done(function(data) {
+        var fields = data.fields;
+        data.fields = Object.keys(fields).map(function(key) { return {name: key, value: fields[key]} });
         chrome.tabs.sendMessage(tab.id, {
           type: "SET_FORM",
           data: data
