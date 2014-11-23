@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/url"
 	"path/filepath"
+	"sort"
 
 	"github.com/kr/fs"
 	"github.com/proglottis/rwvfs"
@@ -48,7 +49,18 @@ func (f *FormRequest) ParseUrl() error {
 
 type Form struct {
 	FormRequest
-	Fields map[string]string `json:"fields,omitempty"`
+	Fields FieldSlice `json:"fields,omitempty"`
+}
+
+type FieldSlice []Field
+
+func (p FieldSlice) Len() int           { return len(p) }
+func (p FieldSlice) Less(i, j int) bool { return p[i].Name < p[j].Name }
+func (p FieldSlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+
+type Field struct {
+	Name  string `json:"name"`
+	Value string `json:"value,omitempty"`
 }
 
 type FormRepo struct {
@@ -69,20 +81,22 @@ func (r *FormRepo) Get(request *FormRequest, passphrase []byte) (*Form, error) {
 	}
 	form := Form{
 		FormRequest: *request,
-		Fields:      make(map[string]string),
+		Fields:      make([]Field, 0, len(fileinfos)),
 	}
 	for _, fileinfo := range fileinfos {
+		var err error
 		filename := fileinfo.Name()
 		if fileinfo.IsDir() || filepath.Ext(filename) != fileExtension {
 			continue
 		}
-		name := filename[:len(filename)-len(fileExtension)]
-		value, err := r.getField(request.Key, name, passphrase)
+		field := Field{Name: filename[:len(filename)-len(fileExtension)]}
+		field.Value, err = r.getField(request.Key, field.Name, passphrase)
 		if err != nil {
 			return nil, err
 		}
-		form.Fields[name] = value
+		form.Fields = append(form.Fields, field)
 	}
+	sort.Sort(form.Fields)
 	return &form, nil
 }
 
@@ -105,16 +119,17 @@ func (r *FormRepo) Fields(request *FormRequest) (*Form, error) {
 	}
 	form := Form{
 		FormRequest: *request,
-		Fields:      make(map[string]string),
+		Fields:      make([]Field, 0, len(fileinfos)),
 	}
 	for _, fileinfo := range fileinfos {
 		filename := fileinfo.Name()
 		if fileinfo.IsDir() || filepath.Ext(filename) != fileExtension {
 			continue
 		}
-		name := filename[:len(filename)-len(fileExtension)]
-		form.Fields[name] = ""
+		field := Field{Name: filename[:len(filename)-len(fileExtension)]}
+		form.Fields = append(form.Fields, field)
 	}
+	sort.Sort(form.Fields)
 	return &form, nil
 }
 
@@ -125,21 +140,21 @@ func (r *FormRepo) Put(form *Form) error {
 	if err := rwvfs.MkdirAll(r.fs, form.Key); err != nil {
 		return err
 	}
-	for field, value := range form.Fields {
-		if err := r.putField(form.Key, field, value); err != nil {
+	for _, field := range form.Fields {
+		if err := r.putField(form.Key, field); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (r *FormRepo) putField(key, name, value string) error {
-	plaintext, err := r.fs.CreateEncrypted(r.fs.Join(key, name+fileExtension))
+func (r *FormRepo) putField(key string, field Field) error {
+	plaintext, err := r.fs.CreateEncrypted(r.fs.Join(key, field.Name+fileExtension))
 	if err != nil {
 		return err
 	}
 	defer plaintext.Close()
-	if _, err := io.WriteString(plaintext, value); err != nil {
+	if _, err := io.WriteString(plaintext, field.Value); err != nil {
 		return err
 	}
 	return nil

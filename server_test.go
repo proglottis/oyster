@@ -9,7 +9,7 @@ import (
 
 func TestKeysHandlerPOST_auth(t *testing.T) {
 	repo := setupFormRepo(t)
-	if err := repo.Put(&Form{FormRequest: FormRequest{Key: "test.com"}, Fields: map[string]string{"username": "bob", "password": "password123"}}); err != nil {
+	if err := repo.Put(&Form{FormRequest: FormRequest{Key: "test.com"}, Fields: []Field{Field{Name: "username", Value: "bob"}, Field{Name: "password", Value: "password123"}}}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -25,7 +25,7 @@ func TestKeysHandlerPOST_auth(t *testing.T) {
 	if w.Code != 200 {
 		t.Errorf("Expected 200, got %#v", w.Code)
 	}
-	expected := `{"key":"test.com","url":"http://test.com","fields":{"password":"password123","username":"bob"}}
+	expected := `{"key":"test.com","url":"http://test.com","fields":[{"name":"password","value":"password123"},{"name":"username","value":"bob"}]}
 `
 	response := w.Body.String()
 	if response != expected {
@@ -37,7 +37,7 @@ func TestKeysHandlerPOST_no_auth(t *testing.T) {
 	repo := setupFormRepo(t)
 	if err := repo.Put(&Form{
 		FormRequest: FormRequest{Key: "test.com"},
-		Fields:      map[string]string{"username": "bob", "password": "password123"},
+		Fields:      []Field{Field{Name: "username", Value: "bob"}, Field{Name: "password", Value: "password123"}},
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func TestKeysHandlerPOST_no_auth(t *testing.T) {
 	if w.Code != 200 {
 		t.Errorf("Expected 200, got %#v", w.Code)
 	}
-	expected := `{"key":"test.com","url":"http://test.com","fields":{"password":"","username":""}}
+	expected := `{"key":"test.com","url":"http://test.com","fields":[{"name":"password"},{"name":"username"}]}
 `
 	response := w.Body.String()
 	if response != expected {
@@ -65,7 +65,7 @@ func TestKeysHandlerPUT(t *testing.T) {
 	repo := setupFormRepo(t)
 
 	handler := &keysHandler{repo: repo}
-	body := strings.NewReader(`{"url":"http://test.com","fields":{"username":"bob","password":"password123"}}`)
+	body := strings.NewReader(`{"url":"http://test.com","fields":[{"name":"username","value":"bob"},{"name":"password","value":"password123"}]}`)
 	req, err := http.NewRequest("PUT", "/keys", body)
 	if err != nil {
 		t.Fatal(err)
@@ -75,7 +75,7 @@ func TestKeysHandlerPUT(t *testing.T) {
 	if w.Code != 200 {
 		t.Errorf("Expected 200, got %#v", w.Code)
 	}
-	expected := `{"key":"test.com","url":"http://test.com","fields":{"password":"password123","username":"bob"}}
+	expected := `{"key":"test.com","url":"http://test.com","fields":[{"name":"username","value":"bob"},{"name":"password","value":"password123"}]}
 `
 	response := w.Body.String()
 	if response != expected {

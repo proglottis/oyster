@@ -27,11 +27,6 @@
 
   app.factory("FormRepo", ['$http', function($http) {
     function put(form) {
-      var fields = {};
-      form.fields.forEach(function(field) {
-        fields[field.name] = field.value;
-      });
-      form.fields = fields;
       return $http.put('http://localhost:45566/keys', form);
     }
 

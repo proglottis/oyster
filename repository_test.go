@@ -16,9 +16,9 @@ func TestFormRepoPutGet(t *testing.T) {
 
 	writeform := &Form{
 		FormRequest: FormRequest{Key: "test"},
-		Fields: map[string]string{
-			"username": "bob",
-			"password": "password123",
+		Fields: []Field{
+			Field{Name: "password", Value: "password123"},
+			Field{Name: "username", Value: "bob"},
 		},
 	}
 	if err := repo.Put(writeform); err != nil {
@@ -32,9 +32,9 @@ func TestFormRepoPutGet(t *testing.T) {
 	if readform.Key != "test" {
 		t.Errorf("Expected 'test', got %#v", readform.Key)
 	}
-	for field, value := range writeform.Fields {
-		if readform.Fields[field] != value {
-			t.Errorf("Expected %#v, got %#v", value, readform.Fields[field])
+	for i, field := range writeform.Fields {
+		if readform.Fields[i] != field {
+			t.Errorf("Expected %#v, got %#v", field, readform.Fields[i])
 		}
 	}
 }
