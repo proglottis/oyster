@@ -30,7 +30,7 @@
       return $http.put('http://localhost:45566/keys', form);
     }
 
-    return {put: put}
+    return {put: put};
   }]);
 
   app.controller("NewFormCtrl", ['$scope', '$window', 'Message', 'FormRepo', function($scope, $window, Message, FormRepo) {
@@ -60,6 +60,6 @@
 
     $scope.close = function() {
       $window.close();
-    }
+    };
   }]);
 }());
