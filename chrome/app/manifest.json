@@ -17,7 +17,7 @@
   },
   "content_scripts": [{
     "matches": ["<all_urls>"],
-    "js": ["bower_components/jquery/dist/jquery.min.js", "content.js"]
+    "js": ["content.js"]
   }],
   "background": {
     "scripts": ["bower_components/jquery/dist/jquery.min.js", "background.js"]
