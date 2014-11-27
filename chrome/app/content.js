@@ -24,13 +24,13 @@ function serializeForms() {
 
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   switch(message.type) {
-    case "SET_FORM":
-      message.data.fields.forEach(function(field) {
+  case "SET_FORM":
+    message.data.fields.forEach(function(field) {
       setElementsValueByName(field.name, field.value);
     });
     break;
-    case "GET_FORM":
-      sendResponse(serializeForms());
+  case "GET_FORM":
+    sendResponse(serializeForms());
     break;
   }
 });

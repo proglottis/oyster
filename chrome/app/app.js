@@ -8,8 +8,12 @@ app.factory("FormRepo", FormRepo);
 
 FormRepo.$inject = ['$http'];
 function FormRepo($http) {
-  function get(url, password) {
-    return $http.post('http://localhost:45566/keys', {url: url}, {
+  function search(q) {
+    return $http.get('http://localhost:45566/keys', {params: {q: q}});
+  }
+
+  function get(key, password) {
+    return $http.post('http://localhost:45566/keys', {key: key}, {
       headers: {
         "Authorization": "Basic " + btoa("passd:" + password)
       }
@@ -20,16 +24,17 @@ function FormRepo($http) {
     return $http.put('http://localhost:45566/keys', form);
   }
 
-  return {get: get, put: put};
+  return {search: search, get: get, put: put};
 }
 
 app.controller("NewFormCtrl", NewFormCtrl);
 
 NewFormCtrl.$inject = ['$scope', '$window', 'Runtime', 'Tabs', 'FormRepo'];
 function NewFormCtrl($scope, $window, Runtime, Tabs, FormRepo) {
+  // Receive from background context menu handler
   Runtime.receive().then(function(form) {
     $scope.tabId = form.tabId;
-    $scope.url = form.url;
+    $scope.key = form.key;
     $scope.fields = form.fields;
   });
 
@@ -42,7 +47,7 @@ function NewFormCtrl($scope, $window, Runtime, Tabs, FormRepo) {
   };
 
   $scope.save = function() {
-    var form = {url: $scope.url, fields: $scope.fields};
+    var form = {key: $scope.key, fields: $scope.fields};
     Tabs.sendMessage($scope.tabId, {
       type: "SET_FORM",
       data: form
@@ -56,19 +61,29 @@ function NewFormCtrl($scope, $window, Runtime, Tabs, FormRepo) {
   };
 }
 
-app.controller("FormCtrl", FormCtrl);
+app.controller("FormSearchCtrl", FormSearchCtrl);
 
-FormCtrl.$inject = ['$scope', '$window', 'Tabs', 'FormRepo'];
-function FormCtrl($scope, $window, Tabs, FormRepo) {
-  $scope.fetch = function() {
-    Tabs.getCurrentActive().then(function(tab) {
-      FormRepo.get(tab.url, $scope.password).then(function(response) {
-        Tabs.sendMessage(tab.id, {
-          type: "SET_FORM",
-          data: response.data
-        });
-        $scope.close();
+FormSearchCtrl.$inject = ['$scope', 'Tabs', 'FormRepo', '$window'];
+function FormSearchCtrl($scope, Tabs, FormRepo, $window) {
+  $scope.password = "";
+  Tabs.getCurrentActive().then(function(tab) {
+    $scope.tabId = tab.id;
+    FormRepo.search(tab.url).then(function(response) {
+      $scope.forms = response.data;
+    });
+  });
+
+  $scope.select = function(form) {
+    $scope.selectedForm = form;
+  };
+
+  $scope.unlock = function() {
+    FormRepo.get($scope.selectedForm.key, $scope.password).then(function(response) {
+      Tabs.sendMessage($scope.tabId, {
+        type: "SET_FORM",
+        data: response.data
       });
+      $scope.close();
     });
   };
 

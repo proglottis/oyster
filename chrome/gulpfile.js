@@ -6,7 +6,8 @@ var gulp = require('gulp'),
     browserify = require('browserify'),
     transform = require('vinyl-transform'),
     sourcemaps = require('gulp-sourcemaps'),
-    uglify = require('gulp-uglify');
+    uglify = require('gulp-uglify'),
+    concatCss = require('gulp-concat-css');
 
 gulp.task('lint', function() {
   return gulp.src(['./*.js', './app/**/*.js'])
@@ -38,6 +39,12 @@ gulp.task('html', function() {
     .pipe(gulp.dest('./dist'));
 });
 
+gulp.task('stylesheet', function() {
+  return gulp.src('./node_modules/angular/angular-csp.css')
+    .pipe(concatCss('app.css'))
+    .pipe(gulp.dest('./dist'));
+});
+
 gulp.task('image', function() {
   return gulp.src('./app/*.png')
     .pipe(gulp.dest('./dist'));
@@ -48,5 +55,5 @@ gulp.task('manifest', function() {
     .pipe(gulp.dest('./dist'));
 });
 
-gulp.task('build', ['javascript', 'html', 'image', 'manifest']);
+gulp.task('build', ['javascript', 'html', 'stylesheet', 'image', 'manifest']);
 gulp.task('default', ['build']);

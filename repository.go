@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/kr/fs"
 	"github.com/sourcegraph/rwvfs"
@@ -15,6 +16,8 @@ import (
 const (
 	idFilename    = ".gpg-id"
 	fileExtension = ".gpg"
+	hostSep       = "."
+	pathSep       = "/"
 )
 
 var (
@@ -31,24 +34,8 @@ func InitRepo(fs *CryptoFS, ids []string) error {
 	return fs.SetIdentities(ids)
 }
 
-type FormRequest struct {
-	Key string `json:"key"`
-	Url string `json:"url,omitempty"`
-}
-
-func (f *FormRequest) ParseUrl() error {
-	if len(f.Url) > 0 {
-		keyurl, err := url.Parse(f.Url)
-		if err != nil {
-			return err
-		}
-		f.Key = keyurl.Host + keyurl.Path
-	}
-	return nil
-}
-
 type Form struct {
-	FormRequest
+	Key    string     `json:"key"`
 	Fields FieldSlice `json:"fields,omitempty"`
 }
 
@@ -71,17 +58,43 @@ func NewFormRepo(fs *CryptoFS) *FormRepo {
 	return &FormRepo{fs: fs}
 }
 
-func (r *FormRepo) Get(request *FormRequest, passphrase []byte) (*Form, error) {
-	if err := request.ParseUrl(); err != nil {
+func (r *FormRepo) Search(query string) ([]Form, error) {
+	url, err := url.Parse(query)
+	if err != nil {
 		return nil, err
 	}
-	fileinfos, err := r.fs.ReadDir(request.Key)
+	components := strings.Split(strings.Trim(url.Path, pathSep), pathSep)
+	if components[0] == "" {
+		components = components[1:]
+	}
+	domains := strings.Split(strings.Trim(url.Host, hostSep), hostSep)
+	forms := make([]Form, 0)
+	for i := 0; i < len(components)+1; i++ {
+		path := strings.Join(components[:len(components)-i], pathSep)
+		for j := range domains {
+			host := strings.Join(domains[j:], ".")
+			key := strings.Trim(host+pathSep+path, pathSep)
+			form, err := r.Fields(key)
+			switch err {
+			case ErrNotFound: // Ignore
+			case nil:
+				forms = append(forms, *form)
+			default:
+				return nil, err
+			}
+		}
+	}
+	return forms, nil
+}
+
+func (r *FormRepo) Get(key string, passphrase []byte) (*Form, error) {
+	fileinfos, err := r.fs.ReadDir(key)
 	if err != nil {
 		return nil, ErrNotFound
 	}
 	form := Form{
-		FormRequest: *request,
-		Fields:      make([]Field, 0, len(fileinfos)),
+		Key:    key,
+		Fields: make([]Field, 0, len(fileinfos)),
 	}
 	for _, fileinfo := range fileinfos {
 		var err error
@@ -90,7 +103,7 @@ func (r *FormRepo) Get(request *FormRequest, passphrase []byte) (*Form, error) {
 			continue
 		}
 		field := Field{Name: filename[:len(filename)-len(fileExtension)]}
-		field.Value, err = r.getField(request.Key, field.Name, passphrase)
+		field.Value, err = r.getField(key, field.Name, passphrase)
 		if err != nil {
 			return nil, err
 		}
@@ -109,17 +122,14 @@ func (r *FormRepo) getField(key, name string, passphrase []byte) (string, error)
 	return readline(plaintext)
 }
 
-func (r *FormRepo) Fields(request *FormRequest) (*Form, error) {
-	if err := request.ParseUrl(); err != nil {
-		return nil, err
-	}
-	fileinfos, err := r.fs.ReadDir(request.Key)
+func (r *FormRepo) Fields(key string) (*Form, error) {
+	fileinfos, err := r.fs.ReadDir(key)
 	if err != nil {
 		return nil, ErrNotFound
 	}
 	form := Form{
-		FormRequest: *request,
-		Fields:      make([]Field, 0, len(fileinfos)),
+		Key:    key,
+		Fields: make([]Field, 0, len(fileinfos)),
 	}
 	for _, fileinfo := range fileinfos {
 		filename := fileinfo.Name()
@@ -134,9 +144,6 @@ func (r *FormRepo) Fields(request *FormRequest) (*Form, error) {
 }
 
 func (r *FormRepo) Put(form *Form) error {
-	if err := form.ParseUrl(); err != nil {
-		return err
-	}
 	if err := rwvfs.MkdirAll(r.fs, form.Key); err != nil {
 		return err
 	}

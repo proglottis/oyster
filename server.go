@@ -35,6 +35,8 @@ type keysHandler struct {
 
 func (h keysHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
+	case "GET":
+		h.Search(w, r)
 	case "POST":
 		h.GetKey(w, r)
 	case "PUT":
@@ -44,41 +46,47 @@ func (h keysHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h keysHandler) Search(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+	forms, err := h.repo.Search(query)
+	if err != nil {
+		panic(err)
+	}
+	JSON(w, forms)
+}
+
+type formRequest struct {
+	Key string `json:"key"`
+}
+
 func (h keysHandler) GetKey(w http.ResponseWriter, r *http.Request) {
 	var form *Form
 	decoder := json.NewDecoder(r.Body)
-	formRequest := FormRequest{}
+	formRequest := formRequest{}
 	if err := decoder.Decode(&formRequest); err != nil {
 		JSONError(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	basic := strings.TrimPrefix(r.Header.Get("Authorization"), "Basic ")
-	if basic != "" {
-		decoded, err := base64.StdEncoding.DecodeString(basic)
-		if err != nil {
-			JSONError(w, err.Error(), http.StatusBadRequest)
-		}
-		pair := bytes.Split(decoded, []byte(":"))
-		passphrase := pair[1]
-		form, err = h.repo.Get(&formRequest, passphrase)
-		switch err {
-		case nil: // Ignore
-		case ErrNotFound:
-			JSONError(w, err.Error(), http.StatusNotFound)
-			return
-		default:
-			panic(err)
-		}
-	} else {
-		var err error
-		form, err = h.repo.Fields(&formRequest)
-		switch err {
-		case nil: // Ignore
-		case ErrNotFound:
-			JSONError(w, err.Error(), http.StatusNotFound)
-			return
-		default:
-			panic(err)
-		}
+	if basic == "" {
+		JSONError(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+	decoded, err := base64.StdEncoding.DecodeString(basic)
+	if err != nil {
+		JSONError(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	pair := bytes.Split(decoded, []byte(":"))
+	passphrase := pair[1]
+	form, err = h.repo.Get(formRequest.Key, passphrase)
+	switch err {
+	case nil: // Ignore
+	case ErrNotFound:
+		JSONError(w, err.Error(), http.StatusNotFound)
+		return
+	default:
+		panic(err)
 	}
 	JSON(w, form)
 }
@@ -88,6 +96,7 @@ func (h keysHandler) PutKey(w http.ResponseWriter, r *http.Request) {
 	form := Form{}
 	if err := decoder.Decode(&form); err != nil {
 		JSONError(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	if err := h.repo.Put(&form); err != nil {
 		panic(err)

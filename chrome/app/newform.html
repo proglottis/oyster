@@ -4,14 +4,15 @@
     <title>Password Daemon</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="app.css">
   </head>
   <body>
     <h1>Password Daemon</h1>
 
     <div ng-controller="NewFormCtrl">
       <form ng-submit="save()" name="newForm">
-        <label>URL</label>
-        <input type="text" ng-model="url" />
+        <label>Key</label>
+        <input type="text" ng-model="key" />
 
         <p ng-form="newField" name="newField" ng-repeat="field in fields">
           <label>Field: <input type="text" ng-model="field.name" /></label>

@@ -4,13 +4,22 @@
     <title>Password Daemon</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="app.css">
   </head>
   <body>
-    <div ng-controller="FormCtrl">
-      <form ng-submit="fetch()">
-        <input type="password" ng-model="password" />
-        <button type="submit">Unlock</button>
-      </form>
+    <div ng-controller="FormSearchCtrl">
+      <div ng-hide="selectedForm">
+        <button type="button" ng-repeat="form in forms" ng-click="select(form)">
+          <h3>{{form.key}}</h3>
+        </button>
+      </div>
+      <div ng-show="selectedForm">
+        <form ng-submit="unlock()">
+          <h3>{{selectedForm.key}}</h3>
+          <input type="password" placeholder="password" ng-model="password" />
+          <button type="submit">Unlock</button>
+        </form>
+      </div>
     </div>
     <script src="app.js"></script>
   </body>

@@ -1,18 +1,6 @@
 'use strict';
 
-var $ = require('jquery');
-
-chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-  $.ajax({
-    url: "http://localhost:45566/keys",
-    type: "POST",
-    data: JSON.stringify({url: tab.url}),
-    contentType: "application/json; charset=utf-8"
-  })
-  .done(function(data) {
-    chrome.pageAction.show(tabId);
-  });
-});
+var Uri = require('jsuri');
 
 chrome.runtime.onInstalled.addListener(function() {
   chrome.contextMenus.create({
@@ -20,9 +8,10 @@ chrome.runtime.onInstalled.addListener(function() {
     contexts: ['all'],
     onclick: function(info, tab) {
       chrome.tabs.sendMessage(tab.id, {type: "GET_FORM"}, function(fields) {
+        var uri = new Uri(tab.url);
         var form = {
           tabId: tab.id,
-          url: tab.url,
+          key: uri.host() + uri.path(),
           fields: fields
         };
         chrome.windows.create({url: 'newform.html', type: 'popup', width: 400, height: 300}, function(){
