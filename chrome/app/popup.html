@@ -1,18 +1,20 @@
 <!DOCTYPE html>
-<html>
+<html ng-app="passd" ng-csp>
   <head>
-    <title>passd</title>
+    <title>Password Daemon</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="bower_components/html5-boilerplate/css/normalize.css">
     <link rel="stylesheet" href="bower_components/html5-boilerplate/css/main.css">
   </head>
   <body>
-    <form>
-      <input type="password" id="password" />
-      <button type="submit">Unlock</button>
-    </form>
-    <script src="bower_components/jquery/dist/jquery.min.js"></script>
-    <script src="popup.js"></script>
+    <div ng-controller="FormCtrl">
+      <form ng-submit="fetch()">
+        <input type="password" ng-model="password" />
+        <button type="submit">Unlock</button>
+      </form>
+    </div>
+    <script src="bower_components/angular/angular.min.js"></script>
+    <script src="app.js"></script>
   </body>
 </html>
