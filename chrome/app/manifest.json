@@ -20,6 +20,6 @@
     "js": ["content.js"]
   }],
   "background": {
-    "scripts": ["bower_components/jquery/dist/jquery.min.js", "background.js"]
+    "scripts": ["background.js"]
   }
 }
