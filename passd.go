@@ -9,10 +9,10 @@ import (
 	"path"
 	"time"
 
-	"code.google.com/p/go.crypto/ssh/terminal"
 	"github.com/atotto/clipboard"
 	"github.com/codegangsta/cli"
 	"github.com/proglottis/rwvfs"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 func repositoryHome() string {

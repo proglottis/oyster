@@ -8,8 +8,8 @@ import (
 	"path"
 	"strings"
 
-	"code.google.com/p/go.crypto/openpgp"
 	"github.com/proglottis/rwvfs"
+	"golang.org/x/crypto/openpgp"
 )
 
 func EntityMatchesId(entity *openpgp.Entity, id string) bool {
