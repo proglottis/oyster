@@ -9,7 +9,7 @@ import (
 	"sort"
 
 	"github.com/kr/fs"
-	"github.com/proglottis/rwvfs"
+	"github.com/sourcegraph/rwvfs"
 )
 
 const (

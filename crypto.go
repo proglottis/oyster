@@ -8,7 +8,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/proglottis/rwvfs"
+	"github.com/sourcegraph/rwvfs"
 	"golang.org/x/crypto/openpgp"
 )
 

@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/proglottis/rwvfs"
+	"github.com/sourcegraph/rwvfs"
 )
 
 func TestFormRepoPutGet(t *testing.T) {

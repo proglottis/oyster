@@ -11,7 +11,7 @@ import (
 
 	"github.com/atotto/clipboard"
 	"github.com/codegangsta/cli"
-	"github.com/proglottis/rwvfs"
+	"github.com/sourcegraph/rwvfs"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
