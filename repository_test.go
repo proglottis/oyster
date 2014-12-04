@@ -71,7 +71,7 @@ func TestFormRepoSearch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected = []string{ "example.com" }
+	expected = []string{"example.com"}
 	if len(forms) != len(expected) {
 		t.Fatalf("Expected %d forms, got %d", len(expected), len(forms))
 	}

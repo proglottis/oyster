@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/codegangsta/negroni"
+	"gopkg.in/unrolled/secure.v1"
 )
 
 const (
@@ -20,13 +21,23 @@ func RunServer(repo *FormRepo) {
 	if port == "" {
 		port = defaultPort
 	}
+	address := "localhost:" + port
+
 	mux := http.NewServeMux()
 	mux.Handle("/keys", &keysHandler{repo: repo})
 
+	secureMiddleware := secure.New(secure.Options{
+		AllowedHosts:       []string{address},
+		FrameDeny:          true,
+		ContentTypeNosniff: true,
+		BrowserXssFilter:   true,
+	})
+
 	n := negroni.Classic()
+	n.Use(negroni.HandlerFunc(secureMiddleware.HandlerFuncWithNext))
 	n.Use(negroni.HandlerFunc(noCache))
 	n.UseHandler(mux)
-	n.Run("localhost:" + port)
+	n.Run(address)
 }
 
 type keysHandler struct {
