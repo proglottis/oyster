@@ -7,13 +7,12 @@
     <link rel="stylesheet" href="app.css">
   </head>
   <body>
-    <div ng-controller="FormSearchCtrl">
-      <div ng-hide="selectedForm">
-        <button type="button" ng-repeat="form in forms" ng-click="select(form)">
-          <h3>{{form.key}}</h3>
-        </button>
+    <div ng-controller="FormSearchCtrl" class="row">
+      <div ng-hide="selectedForm" class="small-12 columns">
+        <h3>Choose:</h3>
+        <button type="button" ng-repeat="form in forms" ng-click="select(form)" class="button expand">{{form.key}}</button>
       </div>
-      <div ng-show="selectedForm">
+      <div ng-show="selectedForm" class="small-12 columns">
         <form ng-submit="unlock()">
           <h3>{{selectedForm.key}}</h3>
           <input type="password" placeholder="password" ng-model="password" />

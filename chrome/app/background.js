@@ -14,7 +14,7 @@ chrome.runtime.onInstalled.addListener(function() {
           key: uri.host() + uri.path(),
           fields: fields
         };
-        chrome.windows.create({url: 'newform.html', type: 'popup', width: 400, height: 300}, function(){
+        chrome.windows.create({url: 'newform.html', type: 'popup', width: 400, height: 500}, function(){
           chrome.runtime.sendMessage(form);
         });
       });

@@ -7,26 +7,50 @@
     <link rel="stylesheet" href="app.css">
   </head>
   <body>
-    <h1>Password Daemon</h1>
+    <div ng-controller="NewFormCtrl" class="row">
+      <div class="small-12 columns">
+        <form ng-submit="save()" name="newForm">
+          <div class="row">
+            <div class="small-12 columns">
+              <label>Key
+                <input type="text" ng-model="key" />
+              </label>
+            </div>
+          </div>
 
-    <div ng-controller="NewFormCtrl">
-      <form ng-submit="save()" name="newForm">
-        <label>Key</label>
-        <input type="text" ng-model="key" />
+          <div ng-form="newField" name="newField" ng-repeat="field in fields" class="row">
+            <div class="small-6 columns">
+              <label>Field
+                <input type="text" ng-model="field.name">
+              </label>
+            </div>
+            <div class="small-6 columns">
+              <label>Value
+                <div class="row collapse">
+                  <div class="small-10 columns">
+                    <input type="text" ng-model="field.value">
+                  </div>
+                  <div class="small-2 columns">
+                    <button type="button" ng-click="removeField($index)" class="button postfix">&cross;</button>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
 
-        <p ng-form="newField" name="newField" ng-repeat="field in fields">
-          <label>Field: <input type="text" ng-model="field.name" /></label>
-          <label>Value: <input type="text" ng-model="field.value" /></label>
-          <button type="button" ng-click="removeField($index)">&cross;</button>
-        </p>
-        <p>
-          <button type="button" ng-click="addField()">Add</button>
-        </p>
-        <p>
-          <button type="submit">Save</button>
-          <button type="button" ng-click="close()">Cancel</button>
-        </p>
-      </form>
+          <div class="row">
+            <div class="small-12 columns">
+              <button type="button" ng-click="addField()" class="button tiny">Add</button>
+            </div>
+          </div>
+          <div class="row">
+            <div class="small-12 columns">
+              <button type="submit" class="button">Save</button>
+              <button type="button" ng-click="close()" class="button secondary">Cancel</button>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
     <script src="app.js"></script>
   </body>

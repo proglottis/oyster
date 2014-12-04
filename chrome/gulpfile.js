@@ -7,6 +7,7 @@ var gulp = require('gulp'),
     transform = require('vinyl-transform'),
     sourcemaps = require('gulp-sourcemaps'),
     uglify = require('gulp-uglify'),
+    sass = require('gulp-sass'),
     concatCss = require('gulp-concat-css');
 
 gulp.task('lint', function() {
@@ -40,7 +41,11 @@ gulp.task('html', function() {
 });
 
 gulp.task('stylesheet', function() {
-  return gulp.src('./node_modules/angular/angular-csp.css')
+  return gulp.src([
+      './node_modules/angular/angular-csp.css',
+      './app/*.scss'
+    ])
+    .pipe(sass())
     .pipe(concatCss('app.css'))
     .pipe(gulp.dest('./dist'));
 });
