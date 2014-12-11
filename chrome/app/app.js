@@ -6,8 +6,7 @@ var app = require('angular').module('passd', ['chrome']);
 
 app.factory("FormRepo", FormRepo);
 
-FormRepo.$inject = ['$http'];
-function FormRepo($http) {
+function FormRepo($http, $window) {
   function search(q) {
     return $http.get('http://localhost:45566/keys', {params: {q: q}});
   }
@@ -15,7 +14,7 @@ function FormRepo($http) {
   function get(key, password) {
     return $http.post('http://localhost:45566/keys', {key: key}, {
       headers: {
-        "Authorization": "Basic " + btoa("passd:" + password)
+        "Authorization": "Basic " + $window.btoa("passd:" + password)
       }
     });
   }
@@ -29,7 +28,6 @@ function FormRepo($http) {
 
 app.controller("NewFormCtrl", NewFormCtrl);
 
-NewFormCtrl.$inject = ['$scope', '$window', 'Runtime', 'Tabs', 'FormRepo'];
 function NewFormCtrl($scope, $window, Runtime, Tabs, FormRepo) {
   // Receive from background context menu handler
   Runtime.receive().then(function(form) {
@@ -63,7 +61,6 @@ function NewFormCtrl($scope, $window, Runtime, Tabs, FormRepo) {
 
 app.controller("FormSearchCtrl", FormSearchCtrl);
 
-FormSearchCtrl.$inject = ['$scope', 'Tabs', 'FormRepo', '$window'];
 function FormSearchCtrl($scope, Tabs, FormRepo, $window) {
   $scope.password = "";
   Tabs.getCurrentActive().then(function(tab) {

@@ -4,7 +4,6 @@ var c = require('angular').module('chrome', []);
 
 c.factory("Tabs", Tabs);
 
-Tabs.$inject = ['$q'];
 function Tabs($q) {
   function sendMessage(tabId, message) {
     return $q(function(resolve, reject) {
@@ -36,7 +35,6 @@ function Tabs($q) {
 
 c.factory("Runtime", Runtime);
 
-Runtime.$inject = ['$q'];
 function Runtime($q) {
   function receive() {
     return $q(function(resolve, reject) {

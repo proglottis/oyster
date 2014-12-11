@@ -1,16 +1,8 @@
 {
   "globalstrict": true,
   "globals": {
-    "describe": false,
-    "it": false,
-    "expect": false,
-    "beforeEach": false,
-    "afterEach": false,
-    "module": false,
-    "inject": false,
     "chrome": false,
     "document": false,
-    "require": false,
-    "btoa": false
+    "require": false
   }
 }

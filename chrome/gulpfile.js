@@ -7,6 +7,7 @@ var gulp = require('gulp'),
     transform = require('vinyl-transform'),
     sourcemaps = require('gulp-sourcemaps'),
     uglify = require('gulp-uglify'),
+    ngAnnotate = require('gulp-ng-annotate'),
     sass = require('gulp-sass'),
     concatCss = require('gulp-concat-css');
 
@@ -30,6 +31,7 @@ gulp.task('javascript', ['lint'], function() {
   return gulp.src(['./app/app.js', './app/background.js', './app/content.js'])
     .pipe(browserified)
     .pipe(sourcemaps.init())
+      .pipe(ngAnnotate())
       .pipe(uglify())
     .pipe(sourcemaps.write('./'))
     .pipe(gulp.dest('./dist'));
