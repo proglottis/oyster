@@ -6,18 +6,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="app.css">
   </head>
-  <body>
+  <body class="popup">
     <div ng-controller="FormSearchCtrl" class="row">
-      <div ng-hide="selectedForm" class="small-12 columns">
-        <h3>Choose:</h3>
-        <button type="button" ng-repeat="form in forms" ng-click="select(form)" class="button expand">{{form.key}}</button>
+      <div ng-show="message" class="small-12 columns">
+        <div class="alert-box">{{message}}</div>
       </div>
-      <div ng-show="selectedForm" class="small-12 columns">
-        <form ng-submit="unlock()">
-          <h3>{{selectedForm.key}}</h3>
-          <input type="password" placeholder="password" ng-model="password" />
-          <button type="submit">Unlock</button>
-        </form>
+      <div ng-hide="message">
+        <div ng-hide="selectedForm" class="small-12 columns">
+          <h3>Choose:</h3>
+          <button type="button" ng-repeat="form in forms" ng-click="select(form)" class="button expand">{{form.key}}</button>
+        </div>
+        <div ng-show="selectedForm" class="small-12 columns">
+          <form ng-submit="unlock()">
+            <h3>{{selectedForm.key}}</h3>
+            <input type="password" placeholder="password" ng-model="password" />
+            <button type="submit">Unlock</button>
+          </form>
+        </div>
       </div>
     </div>
     <script src="app.js"></script>

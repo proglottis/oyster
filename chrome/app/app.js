@@ -70,6 +70,9 @@ function FormSearchCtrl($scope, Tabs, FormRepo, $window) {
     $scope.tabId = tab.id;
     FormRepo.search(tab.url).then(function(response) {
       $scope.forms = response.data;
+      if($scope.forms.length < 1) {
+        $scope.message = "No saved forms for this page";
+      }
     });
   });
 
