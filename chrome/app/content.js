@@ -13,7 +13,7 @@ function serializeForms() {
     var elements = document.forms[i].elements;
     for(var j = 0; j < elements.length; j++) {
       var el = elements[j];
-      if(el.clientHeight < 1 || el.clientWidth < 1) {
+      if(!el.name || el.clientHeight < 1 || el.clientWidth < 1) {
         continue;
       }
       fields.push({name: el.name, value: el.value});
