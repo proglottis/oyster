@@ -1,12 +1,9 @@
 package main
 
 import (
-	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/codegangsta/negroni"
 	"gopkg.in/unrolled/secure.v1"
@@ -71,26 +68,18 @@ type formRequest struct {
 }
 
 func (h keysHandler) GetKey(w http.ResponseWriter, r *http.Request) {
-	var form *Form
 	decoder := json.NewDecoder(r.Body)
 	formRequest := formRequest{}
 	if err := decoder.Decode(&formRequest); err != nil {
 		JSONError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	basic := strings.TrimPrefix(r.Header.Get("Authorization"), "Basic ")
-	if basic == "" {
+	_, passphrase, ok := r.BasicAuth()
+	if !ok {
 		JSONError(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
-	decoded, err := base64.StdEncoding.DecodeString(basic)
-	if err != nil {
-		JSONError(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	pair := bytes.Split(decoded, []byte(":"))
-	passphrase := pair[1]
-	form, err = h.repo.Get(formRequest.Key, passphrase)
+	form, err := h.repo.Get(formRequest.Key, []byte(passphrase))
 	switch err {
 	case nil: // Ignore
 	case ErrNotFound:
