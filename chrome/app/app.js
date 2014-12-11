@@ -77,6 +77,10 @@ function FormSearchCtrl($scope, Tabs, FormRepo, $window) {
     $scope.selectedForm = form;
   };
 
+  $scope.unselect = function() {
+    $scope.selectedForm = null;
+  };
+
   $scope.unlock = function() {
     FormRepo.get($scope.selectedForm.key, $scope.password).then(function(response) {
       Tabs.sendMessage($scope.tabId, {
