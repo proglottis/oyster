@@ -19,7 +19,7 @@
         <div ng-show="selectedForm" class="small-12 columns">
           <form ng-submit="unlock()">
             <h3>{{selectedForm.key}}</h3>
-            <input type="password" placeholder="password" ng-model="password" />
+            <input type="password" placeholder="password" ng-model="password" focus="selectedForm">
             <button type="submit">Unlock</button>
           </form>
         </div>

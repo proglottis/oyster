@@ -91,3 +91,24 @@ function FormSearchCtrl($scope, Tabs, FormRepo, $window) {
     $window.close();
   };
 }
+
+app.directive('focus', focus);
+
+function focus($timeout) {
+  function link(scope, element, attr) {
+    scope.$watch(attr.focus, function(focusVal) {
+      $timeout(function() {
+        if(focusVal) {
+          element[0].focus();
+        } else {
+          element[0].blur();
+        }
+      });
+    });
+  }
+
+  return {
+    restrict : 'A',
+    link : link
+  };
+}
