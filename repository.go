@@ -78,7 +78,9 @@ func (r *FormRepo) Search(query string) ([]Form, error) {
 			switch err {
 			case ErrNotFound: // Ignore
 			case nil:
-				forms = append(forms, *form)
+				if len(form.Fields) > 0 {
+					forms = append(forms, *form)
+				}
 			default:
 				return nil, err
 			}

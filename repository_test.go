@@ -82,6 +82,21 @@ func TestFormRepoSearch(t *testing.T) {
 	}
 }
 
+func TestFormRepoSearch_no_fields(t *testing.T) {
+	repo := setupFormRepo(t)
+	repo.Put(&Form{
+		Key:    "example.com",
+		Fields: FieldSlice{},
+	})
+	forms, err := repo.Search("http://example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(forms) > 0 {
+		t.Errorf("Expected no results, got %#v", len(forms))
+	}
+}
+
 func TestFileRepoCreateOpen(t *testing.T) {
 	repo := setupFileRepo(t)
 
