@@ -33,22 +33,34 @@ func TestKeysHandlerPOST_auth(t *testing.T) {
 	}
 }
 
-func TestKeysHandlerPOST_no_auth(t *testing.T) {
+func TestKeysHandlerPOST_bad_auth(t *testing.T) {
 	repo := setupFormRepo(t)
-	if err := repo.Put(&Form{
-		Key:    "test.com",
-		Fields: []Field{Field{Name: "username", Value: "bob"}, Field{Name: "password", Value: "password123"}},
-	}); err != nil {
+	if err := repo.Put(&Form{Key: "test.com", Fields: []Field{Field{Name: "username", Value: "bob"}, Field{Name: "password", Value: "password123"}}}); err != nil {
 		t.Fatal(err)
 	}
 
 	handler := &keysHandler{repo: repo}
+
+	// No auth
 	body := strings.NewReader(`{"key":"test.com"}`)
 	req, err := http.NewRequest("POST", "/keys", body)
 	if err != nil {
 		t.Fatal(err)
 	}
 	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != 401 {
+		t.Errorf("Expected 401, got %#v", w.Code)
+	}
+
+	// Bad auth
+	body = strings.NewReader(`{"key":"test.com"}`)
+	req, err = http.NewRequest("POST", "/keys", body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.SetBasicAuth("passd", "bad_password")
+	w = httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 	if w.Code != 401 {
 		t.Errorf("Expected 401, got %#v", w.Code)

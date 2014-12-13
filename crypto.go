@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +11,11 @@ import (
 
 	"github.com/sourcegraph/rwvfs"
 	"golang.org/x/crypto/openpgp"
+)
+
+var (
+	ErrCannotDecryptKey = errors.New("Cannot decrypt key")
+	ErrNoMatchingKeys   = fmt.Errorf("No matching keys")
 )
 
 func EntityMatchesId(entity *openpgp.Entity, id string) bool {
@@ -87,9 +93,12 @@ func ReadEncrypted(ciphertext io.ReadCloser, el openpgp.EntityList, passphrase [
 			return nil, fmt.Errorf("No support for symmetrical encryption")
 		}
 		for _, key := range keys {
-			return nil, key.PrivateKey.Decrypt(passphrase)
+			if err := key.PrivateKey.Decrypt(passphrase); err != nil {
+				return nil, ErrCannotDecryptKey
+			}
+			return nil, nil
 		}
-		return nil, fmt.Errorf("No matching keys")
+		return nil, ErrNoMatchingKeys
 	}, nil)
 	if err != nil {
 		return nil, err

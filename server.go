@@ -85,6 +85,9 @@ func (h keysHandler) GetKey(w http.ResponseWriter, r *http.Request) {
 	case ErrNotFound:
 		JSONError(w, err.Error(), http.StatusNotFound)
 		return
+	case ErrCannotDecryptKey:
+		JSONError(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
 	default:
 		panic(err)
 	}
