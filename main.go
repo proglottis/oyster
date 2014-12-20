@@ -16,13 +16,13 @@ import (
 )
 
 func repositoryHome() string {
-	home := os.Getenv("PASSDHOME")
+	home := os.Getenv("OYSTERHOME")
 	if home == "" {
 		user, err := user.Current()
 		if err != nil {
 			panic(err)
 		}
-		home = path.Join(user.HomeDir, ".passd")
+		home = path.Join(user.HomeDir, ".oyster")
 	}
 	return home
 }
@@ -127,8 +127,8 @@ func main() {
 	repo := NewFileRepo(fs)
 	forms := NewFormRepo(fs)
 	app := cli.NewApp()
-	app.Name = "passd"
-	app.Usage = "Password daemon"
+	app.Name = "oyster"
+	app.Usage = "PGP password storage"
 	app.EnableBashCompletion = true
 	app.Action = func(c *cli.Context) {
 		repo.Walk(func(file string) {
@@ -140,7 +140,7 @@ func main() {
   {{.Name}} - {{.Usage}}
 
 USAGE:
-  passd {{.Name}}{{if .Flags}} [command options]{{end}} [arguments...]{{if .Description}}
+  oyster {{.Name}}{{if .Flags}} [command options]{{end}} [arguments...]{{if .Description}}
 
 DESCRIPTION:
   {{.Description}}{{end}}{{if .Flags}}
@@ -153,11 +153,11 @@ OPTIONS:
 	app.Commands = []cli.Command{
 		{
 			Name:  "init",
-			Usage: "Setup passd",
-			Description: `Create passd home directory. If PASSDHOME is set it will be used instead of "~/.passd".
+			Usage: "Setup Oyster",
+			Description: `Create Oyster home directory. If OYSTERHOME is set it will be used instead of "~/.oyster".
 
 EXAMPLE:
-   passd init me@example.org
+   oyster init me@example.org
 `,
 			Action: func(c *cli.Context) {
 				args := c.Args()

@@ -19,7 +19,7 @@ func TestKeysHandlerPOST_auth(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	req.SetBasicAuth("passd", "password")
+	req.SetBasicAuth("oyster", "password")
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 	if w.Code != 200 {
@@ -59,7 +59,7 @@ func TestKeysHandlerPOST_bad_auth(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	req.SetBasicAuth("passd", "bad_password")
+	req.SetBasicAuth("oyster", "bad_password")
 	w = httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 	if w.Code != 401 {

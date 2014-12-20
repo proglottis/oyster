@@ -2,7 +2,7 @@
 
 require('./chrome.js');
 
-var app = require('angular').module('passd', ['chrome']);
+var app = require('angular').module('oyster', ['chrome']);
 
 app.factory("FormRepo", FormRepo);
 
@@ -14,7 +14,7 @@ function FormRepo($http, $window) {
   function get(key, password) {
     return $http.post('http://localhost:45566/keys', {key: key}, {
       headers: {
-        "Authorization": "Basic " + $window.btoa("passd:" + password)
+        "Authorization": "Basic " + $window.btoa("oyster:" + password)
       }
     });
   }
