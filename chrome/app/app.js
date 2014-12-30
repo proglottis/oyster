@@ -7,12 +7,14 @@ var app = require('angular').module('oyster', ['chrome']);
 app.factory("FormRepo", FormRepo);
 
 function FormRepo($http, $window) {
+  var base = 'http://localhost:45566/v1';
+
   function search(q) {
-    return $http.get('http://localhost:45566/keys', {params: {q: q}});
+    return $http.get(base + '/keys', {params: {q: q}});
   }
 
   function get(key, password) {
-    return $http.post('http://localhost:45566/keys', {key: key}, {
+    return $http.post(base + '/keys', {key: key}, {
       headers: {
         "Authorization": "Basic " + $window.btoa("oyster:" + password)
       }
@@ -20,7 +22,7 @@ function FormRepo($http, $window) {
   }
 
   function put(form) {
-    return $http.put('http://localhost:45566/keys', form);
+    return $http.put(base + '/keys', form);
   }
 
   return {search: search, get: get, put: put};
@@ -70,6 +72,8 @@ function FormSearchCtrl($scope, Tabs, FormRepo, $window) {
       if($scope.forms.length < 1) {
         $scope.message = "No saved forms for this page";
       }
+    }, function() {
+      $scope.message = "Cannot connect to Oyster";
     });
   });
 
@@ -88,6 +92,11 @@ function FormSearchCtrl($scope, Tabs, FormRepo, $window) {
         data: response.data
       });
       $scope.close();
+    }, function(response, statuscode) {
+      switch(statuscode) {
+      default:
+        $scope.message = "Cannot connect to Oyster";
+      }
     });
   };
 

@@ -21,7 +21,7 @@ func RunServer(repo *FormRepo) {
 	address := "localhost:" + port
 
 	mux := http.NewServeMux()
-	mux.Handle("/keys", &keysHandler{repo: repo})
+	mux.Handle("/v1/keys", &keysHandler{repo: repo})
 
 	secureMiddleware := secure.New(secure.Options{
 		AllowedHosts:       []string{address},

@@ -15,7 +15,7 @@ import (
 
 var (
 	ErrCannotDecryptKey = errors.New("Cannot decrypt key")
-	ErrNoMatchingKeys   = fmt.Errorf("No matching keys")
+	ErrNoMatchingKeys   = errors.New("No matching keys")
 )
 
 func EntityMatchesId(entity *openpgp.Entity, id string) bool {

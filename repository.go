@@ -68,7 +68,7 @@ func (r *FormRepo) Search(query string) ([]Form, error) {
 		components = components[1:]
 	}
 	domains := strings.Split(strings.Trim(url.Host, hostSep), hostSep)
-	forms := make([]Form, 0)
+	forms := make([]Form, 0, 8)
 	for i := 0; i < len(components)+1; i++ {
 		path := strings.Join(components[:len(components)-i], pathSep)
 		for j := range domains {

@@ -8,12 +8,11 @@ function Tabs($q) {
   function sendMessage(tabId, message) {
     return $q(function(resolve, reject) {
       chrome.tabs.sendMessage(tabId, message, function(response) {
-        var lastError = chrome.runtime.lastError;
-        if (lastError) {
-          reject(lastError);
-        } else {
-          resolve(response);
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+          return;
         }
+        resolve(response);
       });
     });
   }
@@ -21,11 +20,15 @@ function Tabs($q) {
   function getCurrentActive() {
     return $q(function(resolve, reject) {
       chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-        if(tabs.length > 0) {
-          resolve(tabs[0]);
-        } else {
-          reject();
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+          return;
         }
+        if (tabs.length < 1) {
+          reject({message: "No active tab"});
+          return;
+        }
+        resolve(tabs[0]);
       });
     });
   }
@@ -38,7 +41,13 @@ c.factory("Runtime", Runtime);
 function Runtime($q) {
   function receive() {
     return $q(function(resolve, reject) {
-      chrome.runtime.onMessage.addListener(resolve);
+      chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+          return;
+        }
+        resolve(message, sender, sendResponse);
+      });
     });
   }
 
