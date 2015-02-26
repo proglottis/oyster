@@ -1,8 +1,8 @@
 'use strict';
 
-require('./chrome.js');
-
-var app = require('angular').module('oyster', ['chrome']);
+var app = require('angular').module('oyster', [
+  require('./chrome.js')
+]);
 
 app.factory("FormRepo", FormRepo);
 

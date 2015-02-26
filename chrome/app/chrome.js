@@ -1,5 +1,6 @@
 'use strict';
 
+module.exports = 'chrome';
 var c = require('angular').module('chrome', []);
 
 c.factory("Tabs", Tabs);
