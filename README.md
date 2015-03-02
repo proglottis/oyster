@@ -1,5 +1,5 @@
 Oyster
 ======
 
-PGP password storage.
+OpenPGP password storage.
 

@@ -2,8 +2,8 @@
   "manifest_version": 2,
 
   "name": "Oyster",
-  "description": "",
-  "version": "0.0.0",
+  "description": "OpenPGP password store",
+  "version": "0.1.0",
 
   "permissions": [
     "http://localhost:45566/",
