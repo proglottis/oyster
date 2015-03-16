@@ -5,39 +5,14 @@ import (
 	"io"
 	"os"
 	"os/signal"
-	"os/user"
-	"path"
 	"time"
 
 	"github.com/atotto/clipboard"
 	"github.com/codegangsta/cli"
+	"github.com/proglottis/oyster/repository"
 	"github.com/sourcegraph/rwvfs"
 	"golang.org/x/crypto/ssh/terminal"
 )
-
-func repositoryHome() string {
-	home := os.Getenv("OYSTERHOME")
-	if home == "" {
-		user, err := user.Current()
-		if err != nil {
-			panic(err)
-		}
-		home = path.Join(user.HomeDir, ".oyster")
-	}
-	return home
-}
-
-func gpgHome() string {
-	home := os.Getenv("GNUPGHOME")
-	if home == "" {
-		user, err := user.Current()
-		if err != nil {
-			panic(err)
-		}
-		home = path.Join(user.HomeDir, ".gnupg")
-	}
-	return home
-}
 
 func copyThenClear(text string, d time.Duration) error {
 	signals := make(chan os.Signal, 1)
@@ -62,7 +37,7 @@ func copyThenClear(text string, d time.Duration) error {
 	return nil
 }
 
-func bashCompleteKeys(repo *FileRepo) func(*cli.Context) {
+func bashCompleteKeys(repo *repository.FileRepo) func(*cli.Context) {
 	return func(c *cli.Context) {
 		if len(c.Args()) > 0 {
 			return
@@ -122,10 +97,9 @@ func getPassword() ([]byte, error) {
 }
 
 func main() {
-	gpg := NewGpgRepo(gpgHome())
-	fs := NewCryptoFS(rwvfs.OSPerm(repositoryHome(), 0600, 0700), gpg)
-	repo := NewFileRepo(fs)
-	forms := NewFormRepo(fs)
+	gpg := repository.NewGpgRepo(repository.GpgHome())
+	fs := repository.NewCryptoFS(rwvfs.OSPerm(repository.Home(), 0600, 0700), gpg)
+	repo := repository.NewFileRepo(fs)
 	app := cli.NewApp()
 	app.Name = "oyster"
 	app.Usage = "PGP password storage"
@@ -165,7 +139,7 @@ EXAMPLE:
 					fmt.Println("Must provide at least one GPG ID")
 					return
 				}
-				if err := InitRepo(fs, args); err != nil {
+				if err := repository.InitRepo(fs, args); err != nil {
 					fmt.Println(err)
 				}
 			},
@@ -232,13 +206,6 @@ EXAMPLE:
 				}
 			},
 			BashComplete: bashCompleteKeys(repo),
-		},
-		{
-			Name:  "server",
-			Usage: "Start password daemon",
-			Action: func(c *cli.Context) {
-				RunServer(forms)
-			},
 		},
 	}
 	app.Run(os.Args)

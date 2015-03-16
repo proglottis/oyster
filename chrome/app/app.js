@@ -6,23 +6,45 @@ var app = require('angular').module('oyster', [
 
 app.factory("FormRepo", FormRepo);
 
-function FormRepo($http, $window) {
-  var base = 'http://localhost:45566/v1';
-
+function FormRepo($q, Runtime) {
   function search(q) {
-    return $http.get(base + '/keys', {params: {q: q}});
+    return $q(function(resolve, reject) {
+      Runtime.sendNativeMessage('com.github.proglottis.oyster', {
+        type: "SEARCH",
+        data: {
+          query: q
+        }
+      }).then(function(response) {
+        if (response.type === "ERROR") {
+          return reject(response.data);
+        }
+        resolve(response.data);
+      }, reject);
+    });
   }
 
   function get(key, password) {
-    return $http.post(base + '/keys', {key: key}, {
-      headers: {
-        "Authorization": "Basic " + $window.btoa("oyster:" + password)
-      }
+    return $q(function(resolve, reject) {
+      Runtime.sendNativeMessage('com.github.proglottis.oyster', {
+        type: "GET",
+        data: {
+          key: key,
+          passphrase: password
+        }
+      }).then(function(response) {
+        if (response.type === "ERROR") {
+          return reject(response.data);
+        }
+        resolve(response.data);
+      }, reject);
     });
   }
 
   function put(form) {
-    return $http.put(base + '/keys', form);
+    return Runtime.sendNativeMessage('com.github.proglottis.oyster', {
+      type: "PUT",
+      data: form
+    });
   }
 
   return {search: search, get: get, put: put};
@@ -67,13 +89,13 @@ function FormSearchCtrl($scope, Tabs, FormRepo, $window) {
   $scope.password = "";
   Tabs.getCurrentActive().then(function(tab) {
     $scope.tabId = tab.id;
-    FormRepo.search(tab.url).then(function(response) {
-      $scope.forms = response.data;
+    FormRepo.search(tab.url).then(function(forms) {
+      $scope.forms = forms;
       if($scope.forms.length < 1) {
         $scope.message = "No saved forms for this page";
       }
-    }, function() {
-      $scope.message = "Cannot connect to Oyster";
+    }, function(err) {
+      $scope.message = err;
     });
   });
 
@@ -86,17 +108,14 @@ function FormSearchCtrl($scope, Tabs, FormRepo, $window) {
   };
 
   $scope.unlock = function() {
-    FormRepo.get($scope.selectedForm.key, $scope.password).then(function(response) {
+    FormRepo.get($scope.selectedForm.key, $scope.password).then(function(forms) {
       Tabs.sendMessage($scope.tabId, {
         type: "SET_FORM",
-        data: response.data
+        data: forms
       });
       $scope.close();
-    }, function(response, statuscode) {
-      switch(statuscode) {
-      default:
-        $scope.message = "Cannot connect to Oyster";
-      }
+    }, function(err) {
+      $scope.message = err;
     });
   };
 

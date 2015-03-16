@@ -10,7 +10,7 @@ function Tabs($q) {
     return $q(function(resolve, reject) {
       chrome.tabs.sendMessage(tabId, message, function(response) {
         if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
+          reject(chrome.runtime.lastError.message);
           return;
         }
         resolve(response);
@@ -22,7 +22,7 @@ function Tabs($q) {
     return $q(function(resolve, reject) {
       chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
         if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
+          reject(chrome.runtime.lastError.message);
           return;
         }
         if (tabs.length < 1) {
@@ -40,11 +40,23 @@ function Tabs($q) {
 c.factory("Runtime", Runtime);
 
 function Runtime($q) {
+  function sendNativeMessage(application, message) {
+    return $q(function(resolve, reject) {
+      chrome.runtime.sendNativeMessage(application, message, function(response) {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError.message);
+          return;
+        }
+        resolve(response);
+      });
+    });
+  }
+
   function receive() {
     return $q(function(resolve, reject) {
       chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
         if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
+          reject(chrome.runtime.lastError.message);
           return;
         }
         resolve(message, sender, sendResponse);
@@ -52,5 +64,5 @@ function Runtime($q) {
     });
   }
 
-  return {receive: receive};
+  return {sendNativeMessage: sendNativeMessage, receive: receive};
 }

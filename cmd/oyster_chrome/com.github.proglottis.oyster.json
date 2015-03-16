@@ -1,0 +1,10 @@
+{
+  "name": "com.github.proglottis.oyster",
+  "description": "Oyster",
+  "path": "/Users/james/Development/go/src/github.com/proglottis/oyster/cmd/oyster_chrome/oyster_chrome",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://knchgkoimfkgfopjfehdkcchmbmkmfgi/",
+    "chrome-extension://hnpojabeaplfmgmjgdmemhnccpcpkifm/"
+  ]
+}
