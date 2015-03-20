@@ -2,18 +2,13 @@ package repository
 
 import (
 	"os"
-	"os/user"
 	"path"
 )
 
 func Home() string {
 	home := os.Getenv("OYSTERHOME")
 	if home == "" {
-		user, err := user.Current()
-		if err != nil {
-			panic(err)
-		}
-		home = path.Join(user.HomeDir, ".oyster")
+		home = path.Join(configDir(), hiddenPrefix+"oyster")
 	}
 	return home
 }
@@ -21,11 +16,7 @@ func Home() string {
 func GpgHome() string {
 	home := os.Getenv("GNUPGHOME")
 	if home == "" {
-		user, err := user.Current()
-		if err != nil {
-			panic(err)
-		}
-		home = path.Join(user.HomeDir, ".gnupg")
+		home = path.Join(configDir(), hiddenPrefix+"gnupg")
 	}
 	return home
 }
