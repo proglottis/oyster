@@ -24,12 +24,10 @@ function newFormPopup(tabId, url) {
   });
 }
 
-chrome.runtime.onInstalled.addListener(function() {
-  chrome.contextMenus.create({
-    title: 'Save Page Fields',
-    contexts: ['all'],
-    onclick: function(info, tab) {
-      newFormPopup(tab.id, tab.url);
-    }
-  });
+chrome.contextMenus.create({
+  title: 'Save Page Fields',
+  contexts: ['all'],
+  onclick: function(info, tab) {
+    newFormPopup(tab.id, tab.url);
+  }
 });
