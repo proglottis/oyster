@@ -73,15 +73,15 @@ func getPassword() ([]byte, error) {
 	passwords := make(chan password)
 	signal.Notify(signals, os.Interrupt, os.Kill)
 	defer signal.Stop(signals)
-	state, err := terminal.GetState(0)
+	state, err := terminal.GetState(2)
 	if err != nil {
 		return nil, err
 	}
-	defer terminal.Restore(0, state)
+	defer terminal.Restore(2, state)
 	go func() {
-		fmt.Printf("Password: ")
-		defer fmt.Printf("\n")
-		p, err := terminal.ReadPassword(0)
+		fmt.Fprintf(os.Stderr, "Password: ")
+		defer fmt.Fprintf(os.Stderr, "\n")
+		p, err := terminal.ReadPassword(2)
 		passwords <- password{
 			Password: p,
 			Err:      err,
