@@ -12,7 +12,11 @@
     "nativeMessaging"
   ],
   "browser_action": {
-    "default_icon": "icon.png",
+    "default_icon": {
+      "19": "19.png",
+      "38": "38.png"
+    },
+    "default_title": "Oyster",
     "default_popup": "popup.html"
   },
   "content_scripts": [{
@@ -21,5 +25,10 @@
   }],
   "background": {
     "scripts": ["background.js"]
+  },
+  "icons": {
+    "16": "16.png",
+    "48": "48.png",
+    "128": "128.png"
   }
 }
