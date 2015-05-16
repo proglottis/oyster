@@ -9,7 +9,7 @@ import (
 
 	"github.com/atotto/clipboard"
 	"github.com/codegangsta/cli"
-	"github.com/proglottis/oyster/repository"
+	"github.com/proglottis/oyster"
 	"github.com/sourcegraph/rwvfs"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -37,7 +37,7 @@ func copyThenClear(text string, d time.Duration) error {
 	return nil
 }
 
-func bashCompleteKeys(repo *repository.FileRepo) func(*cli.Context) {
+func bashCompleteKeys(repo *oyster.FileRepo) func(*cli.Context) {
 	return func(c *cli.Context) {
 		if len(c.Args()) > 0 {
 			return
@@ -97,9 +97,9 @@ func getPassword() ([]byte, error) {
 }
 
 func main() {
-	gpg := repository.NewGpgRepo(repository.GpgHome())
-	fs := repository.NewCryptoFS(rwvfs.OSPerm(repository.Home(), 0600, 0700), gpg)
-	repo := repository.NewFileRepo(fs)
+	gpg := oyster.NewGpgRepo(oyster.GpgHome())
+	fs := oyster.NewCryptoFS(rwvfs.OSPerm(oyster.Home(), 0600, 0700), gpg)
+	repo := oyster.NewFileRepo(fs)
 	app := cli.NewApp()
 	app.Name = "oyster"
 	app.Usage = "PGP password storage"
@@ -140,7 +140,7 @@ EXAMPLE:
 					fmt.Println("Must provide at least one GPG ID")
 					return
 				}
-				if err := repository.InitRepo(fs, args); err != nil {
+				if err := oyster.InitRepo(fs, args); err != nil {
 					fmt.Println(err)
 				}
 			},

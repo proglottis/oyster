@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/proglottis/oyster/repository"
+	"github.com/proglottis/oyster"
 	"github.com/sourcegraph/rwvfs"
 )
 
@@ -46,7 +46,7 @@ func readRequests(r io.Reader, requests chan<- *Message) {
 type RequestHandler struct {
 	requests <-chan *Message
 	enc      *Encoder
-	repo     *repository.FormRepo
+	repo     *oyster.FormRepo
 }
 
 func (h *RequestHandler) Handle(req *Message) {
@@ -76,7 +76,7 @@ func (h *RequestHandler) Handle(req *Message) {
 		}
 		h.formResponse(form)
 	case "PUT":
-		var data repository.Form
+		var data oyster.Form
 		if err := json.Unmarshal(req.Data, &data); err != nil {
 			h.errorResponse(err)
 			return
@@ -90,7 +90,7 @@ func (h *RequestHandler) Handle(req *Message) {
 	}
 }
 
-func (h *RequestHandler) formsResponse(forms []repository.Form) {
+func (h *RequestHandler) formsResponse(forms []oyster.Form) {
 	var err error
 	response := &Message{Type: "FORMS"}
 	response.Data, err = json.Marshal(forms)
@@ -102,7 +102,7 @@ func (h *RequestHandler) formsResponse(forms []repository.Form) {
 	}
 }
 
-func (h *RequestHandler) formResponse(form *repository.Form) {
+func (h *RequestHandler) formResponse(form *oyster.Form) {
 	var err error
 	response := &Message{Type: "FORM"}
 	response.Data, err = json.Marshal(form)
@@ -137,13 +137,13 @@ func (h *RequestHandler) Run() error {
 
 func main() {
 	requests := make(chan *Message)
-	gpg := repository.NewGpgRepo(repository.GpgHome())
-	fs := repository.NewCryptoFS(rwvfs.OSPerm(repository.Home(), 0600, 0700), gpg)
+	gpg := oyster.NewGpgRepo(oyster.GpgHome())
+	fs := oyster.NewCryptoFS(rwvfs.OSPerm(oyster.Home(), 0600, 0700), gpg)
 
 	handler := &RequestHandler{
 		requests: requests,
 		enc:      NewEncoder(os.Stdout),
-		repo:     repository.NewFormRepo(fs),
+		repo:     oyster.NewFormRepo(fs),
 	}
 	go handler.Run()
 

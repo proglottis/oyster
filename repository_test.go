@@ -1,4 +1,4 @@
-package repository
+package oyster
 
 import (
 	"io/ioutil"
@@ -141,7 +141,7 @@ func TestFileRepoCreateOpen(t *testing.T) {
 }
 
 func setupFormRepo(t testing.TB) *FormRepo {
-	gpg := NewGpgRepo("gpghome")
+	gpg := NewGpgRepo("testdata/gpghome")
 	fs := NewCryptoFS(rwvfs.Map(map[string]string{}), gpg)
 	if err := InitRepo(fs, []string{"test@example.com"}); err != nil {
 		t.Fatal(err)
@@ -150,7 +150,7 @@ func setupFormRepo(t testing.TB) *FormRepo {
 }
 
 func setupFileRepo(t testing.TB) *FileRepo {
-	gpg := NewGpgRepo("gpghome")
+	gpg := NewGpgRepo("testdata/gpghome")
 	fs := NewCryptoFS(rwvfs.Map(map[string]string{}), gpg)
 	if err := InitRepo(fs, []string{"test@example.com"}); err != nil {
 		t.Fatal(err)
