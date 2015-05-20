@@ -7,6 +7,16 @@ import (
 	"github.com/sourcegraph/rwvfs"
 )
 
+var testKeys = []string{
+	"example.com",
+	"example.com/foo",
+	"example.com/foo/bar",
+	"www.example.com",
+	"www.example.com/foo",
+	"www.example.com/foo/bar",
+	"www.example.com/foo/bar/baz",
+}
+
 func TestFormRepoPutGet(t *testing.T) {
 	repo := setupFormRepo(t)
 
@@ -36,6 +46,20 @@ func TestFormRepoPutGet(t *testing.T) {
 		if readform.Fields[i] != field {
 			t.Errorf("Expected %#v, got %#v", field, readform.Fields[i])
 		}
+	}
+}
+
+func TestFormRepoList(t *testing.T) {
+	repo := setupFormRepo(t)
+	loadTestForms(t, repo)
+
+	forms, err := repo.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(forms) != len(testKeys) {
+		t.Fatalf("Expected %d forms, got %d", len(testKeys), len(forms))
 	}
 }
 
@@ -159,17 +183,7 @@ func setupFileRepo(t testing.TB) *FileRepo {
 }
 
 func loadTestForms(t testing.TB, repo *FormRepo) {
-	keys := []string{
-		"example.com",
-		"example.com/foo",
-		"example.com/foo/bar",
-		"www.example.com",
-		"www.example.com/foo",
-		"www.example.com/foo/bar",
-		"www.example.com/foo/bar/baz",
-	}
-
-	for _, key := range keys {
+	for _, key := range testKeys {
 		form := &Form{
 			Key: key,
 			Fields: []Field{

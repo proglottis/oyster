@@ -58,6 +58,30 @@ func NewFormRepo(fs *CryptoFS) *FormRepo {
 	return &FormRepo{fs: fs}
 }
 
+func (r *FormRepo) List() ([]Form, error) {
+	forms := make([]Form, 0)
+	walker := fs.WalkFS(".", r.fs)
+	for walker.Step() {
+		if err := walker.Err(); err != nil {
+			return nil, err
+		}
+		if !walker.Stat().IsDir() {
+			continue
+		}
+		form, err := r.Fields(walker.Path())
+		switch err {
+		case ErrNotFound: // Ignore
+		case nil:
+			if len(form.Fields) > 0 {
+				forms = append(forms, *form)
+			}
+		default:
+			return nil, err
+		}
+	}
+	return forms, nil
+}
+
 func (r *FormRepo) Search(query string) ([]Form, error) {
 	url, err := url.Parse(query)
 	if err != nil {

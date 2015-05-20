@@ -51,6 +51,13 @@ type RequestHandler struct {
 
 func (h *RequestHandler) Handle(req *Message) {
 	switch req.Type {
+	case "LIST":
+		forms, err := h.repo.List()
+		if err != nil {
+			h.errorResponse(err)
+			return
+		}
+		h.formsResponse(forms)
 	case "SEARCH":
 		var data SearchData
 		if err := json.Unmarshal(req.Data, &data); err != nil {
