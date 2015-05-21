@@ -169,7 +169,7 @@ function FormListCtrl($scope, FormRepo, $window, $log) {
     $scope.forms = forms;
 
     if($scope.forms.length < 1) {
-      $scope.message = "No saved forms for this page";
+      $scope.message = "No saved forms";
     }
   }, function(err) {
     $scope.message = err;
@@ -190,27 +190,23 @@ function FormListCtrl($scope, FormRepo, $window, $log) {
   };
 
   $scope.save = function() {
-    var selectedForm = $scope.selectedForm;
-
     FormRepo.put($scope.selectedForm).then(function(data) {
-      var index = 0;
-
-      for (var form in $scope.forms) {
-        if (form.key === selectedForm.key) {
+      var index;
+      for (index = 0; index < $scope.forms.length; index++) {
+        if ($scope.forms[index].key === $scope.selectedForm.key) {
           break;
         }
-
-        index++;
       }
 
       if (index === $scope.forms.length) {
-        $scope.forms.splice(index, 0, selectedForm);
+        $scope.forms.push($scope.selectedForm);
       }
+      $scope.message = null;
     }, function(err) {
       $scope.message = err;
+    }).finally(function() {
+      $scope.cancel();
     });
-
-    $scope.cancel();
   };
 
   $scope.destroy = function(index) {
