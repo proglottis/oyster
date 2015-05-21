@@ -3,7 +3,7 @@
 
   "name": "Oyster",
   "description": "OpenPGP password store",
-  "version": "0.2.5",
+  "version": "0.2.6",
 
   "permissions": [
     "activeTab",
