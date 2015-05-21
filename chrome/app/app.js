@@ -7,6 +7,19 @@ var app = require('angular').module('oyster', [
 app.factory("FormRepo", FormRepo);
 
 function FormRepo($q, Runtime) {
+  function list() {
+    return $q(function(resolve, reject) {
+      Runtime.sendNativeMessage('com.github.proglottis.oyster', {
+        type: "LIST"
+      }).then(function(response) {
+        if (response.type === "ERROR") {
+          return reject(response.data);
+        }
+        resolve(response.data);
+      }, reject);
+    });
+  }
+
   function search(q) {
     return $q(function(resolve, reject) {
       Runtime.sendNativeMessage('com.github.proglottis.oyster', {
@@ -47,7 +60,7 @@ function FormRepo($q, Runtime) {
     });
   }
 
-  return {search: search, get: get, put: put};
+  return {list: list, search: search, get: get, put: put};
 }
 
 app.controller("NewFormCtrl", NewFormCtrl);
@@ -121,6 +134,65 @@ function FormSearchCtrl($scope, Tabs, FormRepo, $window) {
 
   $scope.close = function() {
     $window.close();
+  };
+}
+
+app.controller("FormListCtrl", FormListCtrl);
+
+function FormListCtrl($scope, FormRepo, $log) {
+  $scope.password = "";
+
+  FormRepo.list().then(function(forms) {
+    $scope.forms = forms;
+
+    if($scope.forms.length < 1) {
+      $scope.message = "No saved forms for this page";
+    }
+  }, function(err) {
+    $scope.message = err;
+  });
+
+  $scope.edit = function(form) {
+    $scope.selectedForm = form;
+    $scope.unlocked = false;
+  };
+
+  $scope.update = function() {
+    FormRepo.put($scope.selectedForm);
+    $scope.cancel();
+  };
+
+  $scope.cancel = function() {
+    $scope.selectedForm = null;
+    $scope.unlocked = true;
+  };
+
+  $scope.addField = function() {
+    if ($scope.selectedForm) {
+      $scope.selectedForm.fields.push({});
+    }
+  };
+
+  $scope.removeField = function(index) {
+    if ($scope.selectedForm) {
+      $scope.selectedForm.fields.splice(index, 1);
+    }
+  };
+
+  $scope.unlock = function() {
+    FormRepo.get($scope.selectedForm.key, $scope.password).then(function(form) {
+      if (form) {
+        $scope.selectedForm = form;
+
+        $scope.unlocked = true;
+      } else {
+        $scope.unlocked = false;
+      }
+    }, function(err) {
+      $scope.message = err;
+    });
+
+    $scope.password = "";
   };
 }
 

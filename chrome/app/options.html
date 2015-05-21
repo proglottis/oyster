@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html ng-app="oyster" ng-csp>
+  <head>
+    <title>Oyster</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="app.css">
+  </head>
+  <body>
+    <div ng-controller="FormListCtrl">
+      <div ng-show="message">
+        <div class="alert-box">{{message}}</div>
+      </div>
+
+      <div class="row">
+        <div class="large-3 columns">
+          <table>
+            <caption>Forms</caption>
+            <tr>
+              <th>Key</th>
+              <th></th>
+            </tr>
+            <tr ng-repeat="form in forms">
+              <td>{{form.key}}</td>
+              <td><a ng-click="edit(form)">Edit</a></td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="large-9 columns">
+          <div ng-show="selectedForm" class="panel callout radius">
+            <form ng-hide="unlocked" ng-submit="unlock()">
+              <input type="password" placeholder="password" ng-model="password" focus="selectedForm">
+              <button type="submit">Unlock</button>
+              <button type="button" ng-click="cancel()" class="button secondary">Cancel</button>
+            </form>
+
+            <form ng-show="unlocked" ng-submit="update()" name="editForm">
+              <div class="row">
+                <div class="small-12 columns">
+                  <label>Key
+                    <input type="text" ng-model="selectedForm.key" />
+                  </label>
+                </div>
+              </div>
+
+              <div ng-form="newField" name="newField" ng-repeat="field in selectedForm.fields" class="row">
+                <div class="small-6 columns">
+                  <label>Field
+                    <input type="text" ng-model="field.name">
+                  </label>
+                </div>
+                <div class="small-6 columns">
+                  <label>Value
+                    <div class="row collapse">
+                      <div class="small-10 columns">
+                        <input type="text" ng-model="field.value">
+                      </div>
+                      <div class="small-2 columns">
+                        <button type="button" ng-click="removeField($index)" class="button postfix">&cross;</button>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="small-12 columns">
+                  <button type="button" ng-click="addField()" class="button tiny">Add</button>
+                </div>
+              </div>
+              <div class="row">
+                <div class="small-12 columns">
+                  <button type="submit" class="button">Save</button>
+                  <button type="button" ng-click="cancel()" class="button secondary">Cancel</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
