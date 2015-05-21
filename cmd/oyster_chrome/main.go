@@ -96,6 +96,7 @@ func (h *RequestHandler) Handle(req *Message) {
 			h.errorResponse(err)
 			return
 		}
+		h.okResponse()
 	case "REMOVE":
 		var data DeleteData
 		if err := json.Unmarshal(req.Data, &data); err != nil {
@@ -106,6 +107,7 @@ func (h *RequestHandler) Handle(req *Message) {
 			h.errorResponse(err)
 			return
 		}
+		h.okResponse()
 	default:
 		h.errorResponse(errors.New("Unknown request type"))
 	}
@@ -130,6 +132,13 @@ func (h *RequestHandler) formResponse(form *oyster.Form) {
 	if err != nil {
 		h.errorResponse(err)
 	}
+	if err := h.enc.Encode(response); err != nil {
+		h.errorResponse(err)
+	}
+}
+
+func (h *RequestHandler) okResponse() {
+	response := &Message{Type: "OK"}
 	if err := h.enc.Encode(response); err != nil {
 		h.errorResponse(err)
 	}
