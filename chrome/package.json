@@ -2,7 +2,7 @@
   "name": "oyster",
   "private": true,
   "version": "0.2.8",
-  "description": "OpenPGP password store",
+  "description": "GPG password store",
   "license": "MIT",
   "devDependencies": {
     "bower": "^1.3.1",

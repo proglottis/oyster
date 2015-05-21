@@ -107,7 +107,7 @@ func main() {
 	repo := oyster.NewFileRepo(fs)
 	app := cli.NewApp()
 	app.Name = "oyster"
-	app.Usage = "PGP password storage"
+	app.Usage = "GPG password storage"
 	app.Version = "0.2.8"
 	app.EnableBashCompletion = true
 	app.Action = func(c *cli.Context) {

@@ -2,7 +2,7 @@
   "manifest_version": 2,
 
   "name": "Oyster",
-  "description": "OpenPGP password store",
+  "description": "GPG password store",
   "version": "0.2.8",
 
   "options_page": "options.html",
