@@ -7,6 +7,19 @@ var app = require('angular').module('oyster', [
 app.factory("FormRepo", FormRepo);
 
 function FormRepo($q, Runtime) {
+  function list() {
+    return $q(function(resolve, reject) {
+      Runtime.sendNativeMessage('com.github.proglottis.oyster', {
+        type: "LIST"
+      }).then(function(response) {
+        if (response.type === "ERROR") {
+          return reject(response.data);
+        }
+        resolve(response.data);
+      }, reject);
+    });
+  }
+
   function search(q) {
     return $q(function(resolve, reject) {
       Runtime.sendNativeMessage('com.github.proglottis.oyster', {
@@ -41,13 +54,36 @@ function FormRepo($q, Runtime) {
   }
 
   function put(form) {
-    return Runtime.sendNativeMessage('com.github.proglottis.oyster', {
-      type: "PUT",
-      data: form
+    return $q(function(resolve, reject) {
+      Runtime.sendNativeMessage('com.github.proglottis.oyster', {
+        type: "PUT",
+        data: form
+      }).then(function(response) {
+        if (response.type === "ERROR") {
+          return reject(response.data);
+        }
+        resolve(response.data);
+      }, reject);
     });
   }
 
-  return {search: search, get: get, put: put};
+  function destroy(key) {
+    return $q(function(resolve, reject) {
+      Runtime.sendNativeMessage('com.github.proglottis.oyster', {
+        type: "REMOVE",
+        data: {
+          key: key
+        }
+      }).then(function(response) {
+        if (response.type === "ERROR") {
+          return reject(response.data);
+        }
+        resolve(response.data);
+      }, reject);
+    });
+  }
+
+  return {list: list, search: search, get: get, put: put, destroy: destroy};
 }
 
 app.controller("NewFormCtrl", NewFormCtrl);
@@ -121,6 +157,106 @@ function FormSearchCtrl($scope, Tabs, FormRepo, $window) {
 
   $scope.close = function() {
     $window.close();
+  };
+}
+
+app.controller("FormListCtrl", FormListCtrl);
+
+function FormListCtrl($scope, FormRepo, $window, $log) {
+  $scope.password = "";
+
+  FormRepo.list().then(function(forms) {
+    $scope.forms = forms;
+
+    if($scope.forms.length < 1) {
+      $scope.message = "No saved forms for this page";
+    }
+  }, function(err) {
+    $scope.message = err;
+  });
+
+  $scope.new = function() {
+    $scope.selectedForm = {
+      fields: []
+    };
+
+    $scope.unlocked = true;
+  };
+
+  $scope.edit = function(form) {
+    $scope.selectedForm = form;
+
+    $scope.unlocked = false;
+  };
+
+  $scope.save = function() {
+    var selectedForm = $scope.selectedForm;
+
+    FormRepo.put($scope.selectedForm).then(function(data) {
+      var index = 0;
+
+      for (var form in $scope.forms) {
+        if (form.key === selectedForm.key) {
+          break;
+        }
+
+        index++;
+      }
+
+      if (index === $scope.forms.length) {
+        $scope.forms.splice(index, 0, selectedForm);
+      }
+    }, function(err) {
+      $scope.message = err;
+    });
+
+    $scope.cancel();
+  };
+
+  $scope.destroy = function(index) {
+    if ($window.confirm("Are you sure?")) {
+      var form = $scope.forms[index];
+
+      FormRepo.destroy(form.key).then(function(data) {
+        $scope.forms.splice(index, 1);
+      }, function(err) {
+        $scope.message = err;
+      });
+    }
+  };
+
+  $scope.cancel = function() {
+    $scope.selectedForm = null;
+
+    $scope.unlocked = true;
+  };
+
+  $scope.addField = function() {
+    if ($scope.selectedForm) {
+      $scope.selectedForm.fields.push({});
+    }
+  };
+
+  $scope.removeField = function(index) {
+    if ($scope.selectedForm) {
+      $scope.selectedForm.fields.splice(index, 1);
+    }
+  };
+
+  $scope.unlock = function() {
+    FormRepo.get($scope.selectedForm.key, $scope.password).then(function(form) {
+      if (form) {
+        $scope.selectedForm = form;
+
+        $scope.unlocked = true;
+      } else {
+        $scope.unlocked = false;
+      }
+    }, function(err) {
+      $scope.message = err;
+    });
+
+    $scope.password = "";
   };
 }
 

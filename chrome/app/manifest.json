@@ -5,6 +5,8 @@
   "description": "OpenPGP password store",
   "version": "0.2.7",
 
+  "options_page": "options.html",
+
   "permissions": [
     "activeTab",
     "tabs",
