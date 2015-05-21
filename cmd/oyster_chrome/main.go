@@ -172,8 +172,9 @@ func (h *RequestHandler) Run() error {
 
 func main() {
 	requests := make(chan *Message)
-	gpg := oyster.NewGpgRepo(oyster.GpgHome())
-	fs := oyster.NewCryptoFS(rwvfs.OSPerm(oyster.Home(), 0600, 0700), gpg)
+	config := oyster.NewConfig()
+	gpg := oyster.NewGpgRepo(config.GpgHome())
+	fs := oyster.NewCryptoFS(rwvfs.OSPerm(config.Home(), 0600, 0700), gpg)
 
 	handler := &RequestHandler{
 		requests: requests,
