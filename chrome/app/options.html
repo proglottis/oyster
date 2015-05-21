@@ -7,6 +7,14 @@
     <link rel="stylesheet" href="app.css">
   </head>
   <body>
+    <nav class="top-bar" data-topbar role="navigation">
+      <ul class="title-area">
+        <li class="name">
+          <h1><a href="#">Oyster options</a></h1>
+        </li>
+      </ul>
+    </nav>
+
     <div ng-controller="FormListCtrl">
       <div ng-show="message">
         <div class="alert-box">{{message}}</div>
@@ -19,12 +27,16 @@
             <tr>
               <th>Key</th>
               <th></th>
+              <th></th>
             </tr>
             <tr ng-repeat="form in forms">
               <td>{{form.key}}</td>
               <td><a ng-click="edit(form)">Edit</a></td>
+              <td><a ng-click="destroy($index)">Delete</a></td>
             </tr>
           </table>
+
+          <a ng-click="new()">New Form</a>
         </div>
 
         <div class="large-9 columns">
@@ -35,7 +47,7 @@
               <button type="button" ng-click="cancel()" class="button secondary">Cancel</button>
             </form>
 
-            <form ng-show="unlocked" ng-submit="update()" name="editForm">
+            <form ng-show="unlocked" ng-submit="save()" name="editForm">
               <div class="row">
                 <div class="small-12 columns">
                   <label>Key
