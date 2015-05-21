@@ -172,7 +172,10 @@ func (h *RequestHandler) Run() error {
 
 func main() {
 	requests := make(chan *Message)
-	config := oyster.NewConfig()
+	config, err := oyster.ReadConfig()
+	if err != nil {
+		panic(err)
+	}
 	gpg := oyster.NewGpgRepo(config.GpgHome())
 	fs := oyster.NewCryptoFS(rwvfs.OSPerm(config.Home(), 0600, 0700), gpg)
 

@@ -97,7 +97,11 @@ func getPassword() ([]byte, error) {
 }
 
 func main() {
-	config := oyster.NewConfig()
+	config, err := oyster.ReadConfig()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	gpg := oyster.NewGpgRepo(config.GpgHome())
 	fs := oyster.NewCryptoFS(rwvfs.OSPerm(config.Home(), 0600, 0700), gpg)
 	repo := oyster.NewFileRepo(fs)

@@ -15,6 +15,17 @@ func NewConfig() *Config {
 	return &Config{ini: config.NewDefault()}
 }
 
+func ReadConfig() (*Config, error) {
+	ini, err := config.ReadDefault(path.Join(configDir(), hiddenPrefix+"oysterconfig"))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return NewConfig(), nil
+		}
+		return nil, err
+	}
+	return &Config{ini: ini}, nil
+}
+
 func (c *Config) Home() string {
 	var err error
 	val := os.Getenv("OYSTERHOME")
