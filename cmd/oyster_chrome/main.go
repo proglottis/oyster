@@ -138,7 +138,12 @@ func (h *RequestHandler) formResponse(form *oyster.Form) {
 }
 
 func (h *RequestHandler) okResponse() {
+	var err error
 	response := &Message{Type: "OK"}
+	response.Data, err = json.Marshal(map[string]interface{}{})
+	if err != nil {
+		h.errorResponse(err)
+	}
 	if err := h.enc.Encode(response); err != nil {
 		h.errorResponse(err)
 	}
