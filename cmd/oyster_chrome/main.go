@@ -24,6 +24,10 @@ type GetData struct {
 	Passphrase string `json:"passphrase"`
 }
 
+type DeleteData struct {
+	Key string `json:"key"`
+}
+
 func readRequests(r io.Reader, requests chan<- *Message) {
 	dec := NewDecoder(r)
 	for {
@@ -89,6 +93,16 @@ func (h *RequestHandler) Handle(req *Message) {
 			return
 		}
 		if err := h.repo.Put(&data); err != nil {
+			h.errorResponse(err)
+			return
+		}
+	case "REMOVE":
+		var data DeleteData
+		if err := json.Unmarshal(req.Data, &data); err != nil {
+			h.errorResponse(err)
+			return
+		}
+		if err := h.repo.Remove(data.Key); err != nil {
 			h.errorResponse(err)
 			return
 		}

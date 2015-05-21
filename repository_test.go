@@ -121,6 +121,15 @@ func TestFormRepoSearch_no_fields(t *testing.T) {
 	}
 }
 
+func TestFormRepoRemove(t *testing.T) {
+	repo := setupFormRepo(t)
+	loadTestForms(t, repo)
+
+	if err := repo.Remove(testKeys[0]); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestFileRepoCreateOpen(t *testing.T) {
 	repo := setupFileRepo(t)
 

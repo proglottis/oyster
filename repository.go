@@ -181,6 +181,23 @@ func (r *FormRepo) Put(form *Form) error {
 	return nil
 }
 
+func (r *FormRepo) Remove(key string) error {
+	fileinfos, err := r.fs.ReadDir(key)
+	if err != nil {
+		return ErrNotFound
+	}
+	for _, fileinfo := range fileinfos {
+		filename := fileinfo.Name()
+		if fileinfo.IsDir() || filepath.Ext(filename) != fileExtension {
+			continue
+		}
+		if err := r.fs.Remove(r.fs.Join(key, filename)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (r *FormRepo) putField(key string, field Field) error {
 	plaintext, err := r.fs.CreateEncrypted(r.fs.Join(key, field.Name+fileExtension))
 	if err != nil {
