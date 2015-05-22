@@ -58,6 +58,13 @@ func NewFormRepo(fs *CryptoFS) *FormRepo {
 	return &FormRepo{fs: fs}
 }
 
+func BuildFormRepo(fs *CryptoFS) (*FormRepo, error) {
+	if err := rwvfs.MkdirAll(fs, "/"); err != nil {
+		return nil, err
+	}
+	return NewFormRepo(fs), nil
+}
+
 func (r *FormRepo) List() ([]Form, error) {
 	forms := make([]Form, 0)
 	walker := fs.WalkFS(".", r.fs)
@@ -216,6 +223,13 @@ type FileRepo struct {
 
 func NewFileRepo(fs *CryptoFS) *FileRepo {
 	return &FileRepo{fs: fs}
+}
+
+func BuildFileRepo(fs *CryptoFS) (*FileRepo, error) {
+	if err := rwvfs.MkdirAll(fs, "/"); err != nil {
+		return nil, err
+	}
+	return NewFileRepo(fs), nil
 }
 
 func (r *FileRepo) Open(key string, passphrase []byte) (io.ReadCloser, error) {

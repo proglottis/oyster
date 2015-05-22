@@ -104,7 +104,11 @@ func main() {
 	}
 	gpg := oyster.NewGpgRepo(config.GpgHome())
 	fs := oyster.NewCryptoFS(rwvfs.OSPerm(config.Home(), 0600, 0700), gpg)
-	repo := oyster.NewFileRepo(fs)
+	repo, err := oyster.BuildFileRepo(fs)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	app := cli.NewApp()
 	app.Name = "oyster"
 	app.Usage = "GPG password storage"
