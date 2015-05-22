@@ -129,39 +129,54 @@ func WriteEncrypted(ciphertext io.WriteCloser, el openpgp.EntityList) (io.WriteC
 	return &encryptedWriter{ciphertext, plaintext}, nil
 }
 
-type EntityRepo interface {
-	SecureKeyRing(ids []string) (openpgp.EntityList, error)
-	PublicKeyRing(ids []string) (openpgp.EntityList, error)
-}
-
-type gpgRepo struct {
+type GpgEntityRepo struct {
 	root string
 }
 
-func NewGpgRepo(root string) EntityRepo {
-	return gpgRepo{root: root}
+func NewGpgRepo(root string) GpgEntityRepo {
+	return GpgEntityRepo{root: root}
 }
 
-func (r gpgRepo) SecureKeyRing(ids []string) (openpgp.EntityList, error) {
+func (r GpgEntityRepo) DefaultKeys() ([]string, error) {
+	keyring, err := ReadKeyRing(path.Join(r.root, "secring.gpg"))
+	if err != nil {
+		return nil, err
+	}
+	if len(keyring) > 1 {
+		return nil, errors.New("Ambiguous default key. Run `oyster init <your GPG key ID or email>`")
+	}
+	var ids []string
+	for _, entity := range keyring {
+		for _, key := range entity.Subkeys {
+			ids = append(ids, key.PublicKey.KeyIdShortString())
+		}
+	}
+	return ids, nil
+}
+
+func (r GpgEntityRepo) SecureKeyRing(ids []string) (openpgp.EntityList, error) {
 	return EntitiesFromKeyRing(path.Join(r.root, "secring.gpg"), ids)
 }
 
-func (r gpgRepo) PublicKeyRing(ids []string) (openpgp.EntityList, error) {
+func (r GpgEntityRepo) PublicKeyRing(ids []string) (openpgp.EntityList, error) {
 	return EntitiesFromKeyRing(path.Join(r.root, "pubring.gpg"), ids)
 }
 
 type CryptoFS struct {
 	rwvfs.FileSystem
-	entities EntityRepo
+	entities GpgEntityRepo
 }
 
-func NewCryptoFS(fs rwvfs.FileSystem, entities EntityRepo) *CryptoFS {
+func NewCryptoFS(fs rwvfs.FileSystem, entities GpgEntityRepo) *CryptoFS {
 	return &CryptoFS{FileSystem: fs, entities: entities}
 }
 
 func (fs CryptoFS) Identities() ([]string, error) {
 	f, err := fs.Open(idFilename)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return fs.entities.DefaultKeys()
+		}
 		return nil, err
 	}
 	defer f.Close()
