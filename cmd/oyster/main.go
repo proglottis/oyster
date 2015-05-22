@@ -112,7 +112,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "oyster"
 	app.Usage = "GPG password storage"
-	app.Version = "0.2.8"
+	app.Version = "0.2.9"
 	app.EnableBashCompletion = true
 	app.Action = func(c *cli.Context) {
 		repo.Walk(func(file string) {
