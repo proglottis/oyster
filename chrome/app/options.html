@@ -22,6 +22,10 @@
 
       <div class="row">
         <div class="large-3 columns">
+          <div class="text-center">
+            <button type="button" ng-click="new()" class="button tiny">New Form</button>
+          </div>
+
           <table>
             <caption>Forms</caption>
             <tr>
@@ -35,8 +39,6 @@
               <td><a ng-click="destroy($index)">Delete</a></td>
             </tr>
           </table>
-
-          <a ng-click="new()">New Form</a>
         </div>
 
         <div class="large-9 columns">
