@@ -178,15 +178,11 @@ func main() {
 	}
 	gpg := oyster.NewGpgRepo(config.GpgHome())
 	fs := oyster.NewCryptoFS(rwvfs.OSPerm(config.Home(), 0600, 0700), gpg)
-	repo, err := oyster.BuildFormRepo(fs)
-	if err != nil {
-		panic(err)
-	}
 
 	handler := &RequestHandler{
 		requests: requests,
 		enc:      NewEncoder(os.Stdout),
-		repo:     repo,
+		repo:     oyster.NewFormRepo(fs),
 	}
 	go handler.Run()
 
