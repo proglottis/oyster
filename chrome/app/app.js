@@ -8,73 +8,55 @@ app.factory("FormRepo", FormRepo);
 
 function FormRepo($q, Runtime) {
   function list() {
-    return $q(function(resolve, reject) {
-      Runtime.sendNativeMessage('com.github.proglottis.oyster', {
-        type: "LIST"
-      }).then(function(response) {
-        if (response.type === "ERROR") {
-          return reject(response.data);
-        }
-        resolve(response.data);
-      }, reject);
-    });
+    return sendMessage({type: "LIST"});
   }
 
   function search(q) {
-    return $q(function(resolve, reject) {
-      Runtime.sendNativeMessage('com.github.proglottis.oyster', {
-        type: "SEARCH",
-        data: {
-          query: q
-        }
-      }).then(function(response) {
-        if (response.type === "ERROR") {
-          return reject(response.data);
-        }
-        resolve(response.data);
-      }, reject);
+    return sendMessage({
+      type: "SEARCH",
+      data: {query: q}
     });
   }
 
   function get(key, password) {
-    return $q(function(resolve, reject) {
-      Runtime.sendNativeMessage('com.github.proglottis.oyster', {
-        type: "GET",
-        data: {
-          key: key,
-          passphrase: password
-        }
-      }).then(function(response) {
-        if (response.type === "ERROR") {
-          return reject(response.data);
-        }
-        resolve(response.data);
-      }, reject);
+    return sendMessage({
+      type: "GET",
+      data: {
+        key: key,
+        passphrase: password
+      }
     });
   }
 
   function put(form) {
-    return $q(function(resolve, reject) {
-      Runtime.sendNativeMessage('com.github.proglottis.oyster', {
-        type: "PUT",
-        data: form
-      }).then(function(response) {
-        if (response.type === "ERROR") {
-          return reject(response.data);
-        }
-        resolve(response.data);
-      }, reject);
+    return sendMessage({
+      type: "PUT",
+      data: form
     });
   }
 
   function destroy(key) {
+    return sendMessage({
+      type: "REMOVE",
+      data: {key: key}
+    });
+  }
+
+  function update(key, form) {
     return $q(function(resolve, reject) {
-      Runtime.sendNativeMessage('com.github.proglottis.oyster', {
-        type: "REMOVE",
-        data: {
-          key: key
+      put(form).then(function() {
+        if (key === form.key) {
+          resolve();
+        } else {
+          destroy(key).then(resolve, reject);
         }
-      }).then(function(response) {
+      }, reject);
+    });
+  }
+
+  function sendMessage(msg) {
+    return $q(function(resolve, reject) {
+      Runtime.sendNativeMessage('com.github.proglottis.oyster', msg).then(function(response) {
         if (response.type === "ERROR") {
           return reject(response.data);
         }
@@ -83,7 +65,7 @@ function FormRepo($q, Runtime) {
     });
   }
 
-  return {list: list, search: search, get: get, put: put, destroy: destroy};
+  return {list: list, search: search, get: get, put: put, destroy: destroy, update: update};
 }
 
 app.controller("NewFormCtrl", NewFormCtrl);
@@ -191,32 +173,20 @@ function FormListCtrl($scope, FormRepo, $window, $log) {
   };
 
   $scope.save = function() {
-    FormRepo.put($scope.selectedForm).then(function(data) {
-      if ($scope.originalForm !== null) {
-        FormRepo.destroy($scope.originalForm.key).then(function(data) {
-          var index;
-          for (index = 0; index < $scope.forms.length; index++) {
-            var form = $scope.forms[index];
-
-            if (form.key === $scope.originalForm.key) {
-              break;
-            }
-          }
-
-          $scope.forms.splice(index, 1);
-          $scope.forms.splice(index, 0, $scope.selectedForm);
-
-          $scope.message = null;
-        }, function(err) {
-          $scope.message = err;
-        });
-      } else {
-        $scope.forms.push($scope.selectedForm);
+    var key = $scope.originalForm ? $scope.originalForm.key : $scope.selectedForm.key;
+    FormRepo.update(key, $scope.selectedForm).then(function() {
+      var index;
+      for (index = 0; index < $scope.forms.length; index++) {
+        if ($scope.forms[index].key === key) {
+          break;
+        }
       }
-
+      $scope.forms[index] = $scope.selectedForm;
       $scope.message = null;
     }, function(err) {
       $scope.message = err;
+    }).finally(function() {
+      $scope.cancel();
     });
   };
 
@@ -224,7 +194,7 @@ function FormListCtrl($scope, FormRepo, $window, $log) {
     if ($window.confirm("Are you sure?")) {
       var form = $scope.forms[index];
 
-      FormRepo.destroy(form.key).then(function(data) {
+      FormRepo.destroy(form.key).then(function() {
         $scope.forms.splice(index, 1);
       }, function(err) {
         $scope.message = err;
