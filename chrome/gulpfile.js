@@ -6,8 +6,10 @@ var gulp = require('gulp'),
     jshint = require('gulp-jshint'),
     del = require('del'),
     browserify = require('browserify'),
-    transform = require('vinyl-transform'),
+    buffer = require('vinyl-buffer'),
+    source = require('vinyl-source-stream'),
     uglify = require('gulp-uglify'),
+    eventstream = require('event-stream'),
     ngAnnotate = require('gulp-ng-annotate'),
     sass = require('gulp-sass'),
     concatCss = require('gulp-concat-css');
@@ -24,16 +26,17 @@ gulp.task('clean', function(cb) {
 });
 
 gulp.task('javascript', ['lint'], function() {
-  var browserified = transform(function(filename) {
-    var b = browserify(filename);
-    return b.bundle();
-  });
+  var bundles = ['app.js', 'background.js', 'content.js'];
 
-  return gulp.src(['./app/app.js', './app/background.js', './app/content.js'])
-    .pipe(browserified)
-    .pipe(ngAnnotate())
-    .pipe(gulpif(argv.production, uglify()))
-    .pipe(gulp.dest('./dist'));
+  var tasks = bundles.map(function(filename) {
+    return browserify('./app/' + filename).bundle()
+      .pipe(source(filename))
+      .pipe(buffer())
+      .pipe(ngAnnotate())
+      .pipe(gulpif(argv.production, uglify()))
+      .pipe(gulp.dest('./dist'));
+  });
+  return eventstream.merge.apply(null, tasks);
 });
 
 gulp.task('html', function() {
