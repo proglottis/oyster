@@ -1,6 +1,8 @@
 'use strict';
 
 var gulp = require('gulp'),
+    gulpif = require('gulp-if'),
+    argv = require('yargs').argv,
     jshint = require('gulp-jshint'),
     del = require('del'),
     browserify = require('browserify'),
@@ -30,7 +32,7 @@ gulp.task('javascript', ['lint'], function() {
   return gulp.src(['./app/app.js', './app/background.js', './app/content.js'])
     .pipe(browserified)
     .pipe(ngAnnotate())
-    .pipe(uglify())
+    .pipe(gulpif(argv.production, uglify()))
     .pipe(gulp.dest('./dist'));
 });
 
