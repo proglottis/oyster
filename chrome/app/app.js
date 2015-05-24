@@ -184,6 +184,7 @@ function FormListCtrl($scope, FormRepo, $window, $log) {
   };
 
   $scope.edit = function(form) {
+    $scope.originalForm = form;
     $scope.selectedForm = form;
 
     $scope.unlocked = false;
@@ -191,21 +192,31 @@ function FormListCtrl($scope, FormRepo, $window, $log) {
 
   $scope.save = function() {
     FormRepo.put($scope.selectedForm).then(function(data) {
-      var index;
-      for (index = 0; index < $scope.forms.length; index++) {
-        if ($scope.forms[index].key === $scope.selectedForm.key) {
-          break;
-        }
-      }
+      if ($scope.originalForm !== null) {
+        FormRepo.destroy($scope.originalForm.key).then(function(data) {
+          var index;
+          for (index = 0; index < $scope.forms.length; index++) {
+            var form = $scope.forms[index];
 
-      if (index === $scope.forms.length) {
+            if (form.key === $scope.originalForm.key) {
+              break;
+            }
+          }
+
+          $scope.forms.splice(index, 1);
+          $scope.forms.splice(index, 0, $scope.selectedForm);
+
+          $scope.message = null;
+        }, function(err) {
+          $scope.message = err;
+        });
+      } else {
         $scope.forms.push($scope.selectedForm);
       }
+
       $scope.message = null;
     }, function(err) {
       $scope.message = err;
-    }).finally(function() {
-      $scope.cancel();
     });
   };
 
@@ -222,6 +233,7 @@ function FormListCtrl($scope, FormRepo, $window, $log) {
   };
 
   $scope.cancel = function() {
+    $scope.originalForm = null;
     $scope.selectedForm = null;
 
     $scope.unlocked = true;
@@ -248,6 +260,8 @@ function FormListCtrl($scope, FormRepo, $window, $log) {
       } else {
         $scope.unlocked = false;
       }
+
+      $scope.message = null;
     }, function(err) {
       $scope.message = err;
     });
