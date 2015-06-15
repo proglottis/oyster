@@ -27,3 +27,10 @@ Make sure your password repository is setup.
 ```bash
 oyster init <your gpg key ID or email>
 ```
+
+By default the passwords will be GPG encrypted in `~/.oyster/`, this default can be changed in the configuration file `~/.oysterconfig`. All settings in this file are currently optional.
+
+```ini
+home = /Users/john/Google Drive/oyster
+gpgHome = /Volumes/Johns USB/.gnupg
+```
