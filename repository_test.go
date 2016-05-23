@@ -20,7 +20,7 @@ var testKeys = []string{
 func TestFormRepoPutGet(t *testing.T) {
 	repo := setupFormRepo(t)
 
-	if _, err := repo.Get("test", []byte("password")); err != ErrNotFound {
+	if _, err := repo.Get("test"); err != ErrNotFound {
 		t.Error("Expected ErrNotFound, got", err)
 	}
 
@@ -35,7 +35,7 @@ func TestFormRepoPutGet(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	readform, err := repo.Get("test", []byte("password"))
+	readform, err := repo.Get("test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,7 +133,7 @@ func TestFormRepoRemove(t *testing.T) {
 func TestFileRepoCreateOpen(t *testing.T) {
 	repo := setupFileRepo(t)
 
-	if _, err := repo.Open("test", []byte("password")); err != ErrNotFound {
+	if _, err := repo.Open("test"); err != ErrNotFound {
 		t.Error("Expected ErrNotFound, got", err)
 	}
 
@@ -147,7 +147,7 @@ func TestFileRepoCreateOpen(t *testing.T) {
 	}
 	clearwrite.Close()
 
-	clearread, err := repo.Open("test", []byte("password"))
+	clearread, err := repo.Open("test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +163,7 @@ func TestFileRepoCreateOpen(t *testing.T) {
 		t.Error("Expected 'password123\\nThe best password', got", string(text))
 	}
 
-	line, err := repo.Line("test", []byte("password"))
+	line, err := repo.Line("test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,6 +176,7 @@ func TestFileRepoCreateOpen(t *testing.T) {
 func setupFormRepo(t testing.TB) *FormRepo {
 	gpg := NewGpgRepo("testdata/gpghome")
 	fs := NewCryptoFS(rwvfs.Map(map[string]string{}), gpg)
+	fs.Callback = func() []byte { return []byte("password") }
 	if err := InitRepo(fs, []string{"test@example.com"}); err != nil {
 		t.Fatal(err)
 	}
@@ -185,6 +186,7 @@ func setupFormRepo(t testing.TB) *FormRepo {
 func setupFileRepo(t testing.TB) *FileRepo {
 	gpg := NewGpgRepo("testdata/gpghome")
 	fs := NewCryptoFS(rwvfs.Map(map[string]string{}), gpg)
+	fs.Callback = func() []byte { return []byte("password") }
 	if err := InitRepo(fs, []string{"test@example.com"}); err != nil {
 		t.Fatal(err)
 	}

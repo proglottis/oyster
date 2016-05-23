@@ -40,6 +40,10 @@ function Tabs($q) {
 c.factory("Runtime", Runtime);
 
 function Runtime($q) {
+  function connectNative(application) {
+    return chrome.runtime.connectNative(application);
+  }
+
   function sendNativeMessage(application, message) {
     return $q(function(resolve, reject) {
       chrome.runtime.sendNativeMessage(application, message, function(response) {
@@ -64,5 +68,5 @@ function Runtime($q) {
     });
   }
 
-  return {sendNativeMessage: sendNativeMessage, receive: receive};
+  return {connectNative: connectNative, sendNativeMessage: sendNativeMessage, receive: receive};
 }

@@ -162,8 +162,11 @@ func (r GpgEntityRepo) PublicKeyRing(ids []string) (openpgp.EntityList, error) {
 	return EntitiesFromKeyRing(path.Join(r.root, "pubring.gpg"), ids)
 }
 
+type Callback func() []byte
+
 type CryptoFS struct {
 	rwvfs.FileSystem
+	Callback Callback
 	entities GpgEntityRepo
 }
 
@@ -222,7 +225,7 @@ func (fs CryptoFS) SetIdentities(ids []string) error {
 	return nil
 }
 
-func (fs CryptoFS) OpenEncrypted(name string, passphrase []byte) (io.ReadCloser, error) {
+func (fs CryptoFS) OpenEncrypted(name string) (io.ReadCloser, error) {
 	ciphertext, err := fs.Open(name)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -238,7 +241,7 @@ func (fs CryptoFS) OpenEncrypted(name string, passphrase []byte) (io.ReadCloser,
 	if err != nil {
 		return nil, err
 	}
-	return ReadEncrypted(ciphertext, el, passphrase)
+	return ReadEncrypted(ciphertext, el, fs.Callback())
 }
 
 func (fs CryptoFS) CreateEncrypted(name string) (io.WriteCloser, error) {

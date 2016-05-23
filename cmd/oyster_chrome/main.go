@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 
@@ -19,38 +20,45 @@ type SearchData struct {
 	Query string `json:"query"`
 }
 
-type GetData struct {
-	Key        string `json:"key"`
-	Passphrase string `json:"passphrase"`
-}
-
-type DeleteData struct {
+type KeyData struct {
 	Key string `json:"key"`
 }
 
-func readRequests(r io.Reader, requests chan<- *Message) {
+type PasswordData struct {
+	Passphrase string `json:"passphrase"`
+}
+
+func writeMessages(w io.Writer, messages <-chan *Message) {
+	enc := NewEncoder(w)
+	for {
+		msg := <-messages
+		if err := enc.Encode(msg); err != nil {
+			panic(err)
+		}
+	}
+}
+
+func readMessages(r io.Reader, messages chan<- *Message) {
 	dec := NewDecoder(r)
 	for {
 		var req Message
 		if err := dec.Decode(&req); err != nil {
 			switch err {
 			case io.EOF:
-				close(requests)
+				close(messages)
 				return
 			default:
 				panic(err)
 			}
 		}
-		select {
-		case requests <- &req:
-		}
+		messages <- &req
 	}
 }
 
 type RequestHandler struct {
-	requests <-chan *Message
-	enc      *Encoder
-	repo     *oyster.FormRepo
+	in   <-chan *Message
+	out  chan<- *Message
+	repo *oyster.FormRepo
 }
 
 func (h *RequestHandler) Handle(req *Message) {
@@ -75,12 +83,12 @@ func (h *RequestHandler) Handle(req *Message) {
 		}
 		h.formsResponse(forms)
 	case "GET":
-		var data GetData
+		var data KeyData
 		if err := json.Unmarshal(req.Data, &data); err != nil {
 			h.errorResponse(err)
 			return
 		}
-		form, err := h.repo.Get(data.Key, []byte(data.Passphrase))
+		form, err := h.repo.Get(data.Key)
 		if err != nil {
 			h.errorResponse(err)
 			return
@@ -98,7 +106,7 @@ func (h *RequestHandler) Handle(req *Message) {
 		}
 		h.okResponse()
 	case "REMOVE":
-		var data DeleteData
+		var data KeyData
 		if err := json.Unmarshal(req.Data, &data); err != nil {
 			h.errorResponse(err)
 			return
@@ -109,7 +117,7 @@ func (h *RequestHandler) Handle(req *Message) {
 		}
 		h.okResponse()
 	default:
-		h.errorResponse(errors.New("Unknown request type"))
+		h.errorResponse(fmt.Errorf("Unknown request type: %s", req.Type))
 	}
 }
 
@@ -119,10 +127,9 @@ func (h *RequestHandler) formsResponse(forms []oyster.Form) {
 	response.Data, err = json.Marshal(forms)
 	if err != nil {
 		h.errorResponse(err)
+		return
 	}
-	if err := h.enc.Encode(response); err != nil {
-		h.errorResponse(err)
-	}
+	h.out <- response
 }
 
 func (h *RequestHandler) formResponse(form *oyster.Form) {
@@ -131,10 +138,9 @@ func (h *RequestHandler) formResponse(form *oyster.Form) {
 	response.Data, err = json.Marshal(form)
 	if err != nil {
 		h.errorResponse(err)
+		return
 	}
-	if err := h.enc.Encode(response); err != nil {
-		h.errorResponse(err)
-	}
+	h.out <- response
 }
 
 func (h *RequestHandler) okResponse() {
@@ -143,10 +149,9 @@ func (h *RequestHandler) okResponse() {
 	response.Data, err = json.Marshal(map[string]interface{}{})
 	if err != nil {
 		h.errorResponse(err)
+		return
 	}
-	if err := h.enc.Encode(response); err != nil {
-		h.errorResponse(err)
-	}
+	h.out <- response
 }
 
 func (h *RequestHandler) errorResponse(err error) {
@@ -156,22 +161,49 @@ func (h *RequestHandler) errorResponse(err error) {
 	if e != nil {
 		panic(e)
 	}
-	if err := h.enc.Encode(response); err != nil {
-		panic(err)
+	h.out <- response
+}
+
+func (h *RequestHandler) passwordRequired() {
+	var err error
+	msg := &Message{Type: "GET_PASSWORD"}
+	msg.Data, err = json.Marshal(map[string]interface{}{})
+	if err != nil {
+		h.errorResponse(err)
+		return
+	}
+	h.out <- msg
+}
+
+func (h *RequestHandler) Password() []byte {
+	var req *Message
+	h.passwordRequired()
+	for {
+		req = <-h.in
+		if req.Type != "PASSWORD" {
+			h.errorResponse(errors.New("Expecting password"))
+			continue
+		}
+		var data PasswordData
+		if err := json.Unmarshal(req.Data, &data); err != nil {
+			h.errorResponse(err)
+			continue
+		}
+		return []byte(data.Passphrase)
 	}
 }
 
 func (h *RequestHandler) Run() error {
+	var req *Message
 	for {
-		select {
-		case req := <-h.requests:
-			h.Handle(req)
-		}
+		req = <-h.in
+		h.Handle(req)
 	}
 }
 
 func main() {
-	requests := make(chan *Message)
+	in := make(chan *Message)
+	out := make(chan *Message)
 	config, err := oyster.ReadConfig()
 	if err != nil {
 		panic(err)
@@ -180,11 +212,15 @@ func main() {
 	fs := oyster.NewCryptoFS(rwvfs.OSPerm(config.Home(), 0600, 0700), gpg)
 
 	handler := &RequestHandler{
-		requests: requests,
-		enc:      NewEncoder(os.Stdout),
-		repo:     oyster.NewFormRepo(fs),
+		in:   in,
+		out:  out,
+		repo: oyster.NewFormRepo(fs),
+	}
+	fs.Callback = func() []byte {
+		return handler.Password()
 	}
 	go handler.Run()
 
-	readRequests(os.Stdin, requests)
+	go writeMessages(os.Stdout, out)
+	readMessages(os.Stdin, in)
 }

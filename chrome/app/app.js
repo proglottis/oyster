@@ -7,6 +7,8 @@ var app = require('angular').module('oyster', [
 app.factory("FormRepo", FormRepo);
 
 function FormRepo($q, Runtime) {
+  var port = Runtime.connectNative('com.github.proglottis.oyster');
+
   function list() {
     return sendMessage({type: "LIST"});
   }
@@ -56,12 +58,21 @@ function FormRepo($q, Runtime) {
 
   function sendMessage(msg) {
     return $q(function(resolve, reject) {
-      Runtime.sendNativeMessage('com.github.proglottis.oyster', msg).then(function(response) {
+      function onMessage(response) {
+        port.onMessage.removeListener(onMessage);
         if (response.type === "ERROR") {
           return reject(response.data);
         }
+        if (response.type === "GET_PASSWORD") {
+          return sendMessage({
+            type: "PASSWORD",
+            data: {passphrase: msg.data.passphrase}
+          }).then(resolve, reject);
+        }
         resolve(response.data);
-      }, reject);
+      }
+      port.onMessage.addListener(onMessage);
+      port.postMessage(msg);
     });
   }
 

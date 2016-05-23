@@ -96,6 +96,14 @@ func getPassword() ([]byte, error) {
 	}
 }
 
+func callback() []byte {
+	passphrase, err := getPassword()
+	if err != nil {
+		panic(err)
+	}
+	return passphrase
+}
+
 func main() {
 	config, err := oyster.ReadConfig()
 	if err != nil {
@@ -104,6 +112,7 @@ func main() {
 	}
 	gpg := oyster.NewGpgRepo(config.GpgHome())
 	fs := oyster.NewCryptoFS(rwvfs.OSPerm(config.Home(), 0600, 0700), gpg)
+	fs.Callback = callback
 	repo := oyster.NewFileRepo(fs)
 	app := cli.NewApp()
 	app.Name = "oyster"
@@ -154,11 +163,7 @@ EXAMPLE:
 			Name:  "get",
 			Usage: "Print a password to console",
 			Action: func(c *cli.Context) {
-				passphrase, err := getPassword()
-				if err != nil {
-					panic(err)
-				}
-				plaintext, err := repo.Open(c.Args().First(), passphrase)
+				plaintext, err := repo.Open(c.Args().First())
 				if err != nil {
 					panic(err)
 				}
@@ -171,11 +176,7 @@ EXAMPLE:
 			Name:  "copy",
 			Usage: "Copy a password to the clipboard",
 			Action: func(c *cli.Context) {
-				passphrase, err := getPassword()
-				if err != nil {
-					panic(err)
-				}
-				password, err := repo.Line(c.Args().First(), passphrase)
+				password, err := repo.Line(c.Args().First())
 				if err != nil {
 					panic(err)
 				}

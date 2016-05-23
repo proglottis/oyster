@@ -113,7 +113,7 @@ func (r *FormRepo) Search(query string) ([]Form, error) {
 	return forms, nil
 }
 
-func (r *FormRepo) Get(key string, passphrase []byte) (*Form, error) {
+func (r *FormRepo) Get(key string) (*Form, error) {
 	fileinfos, err := r.fs.ReadDir(key)
 	if err != nil {
 		return nil, ErrNotFound
@@ -129,7 +129,7 @@ func (r *FormRepo) Get(key string, passphrase []byte) (*Form, error) {
 			continue
 		}
 		field := Field{Name: filename[:len(filename)-len(fileExtension)]}
-		field.Value, err = r.getField(key, field.Name, passphrase)
+		field.Value, err = r.getField(key, field.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -139,8 +139,8 @@ func (r *FormRepo) Get(key string, passphrase []byte) (*Form, error) {
 	return &form, nil
 }
 
-func (r *FormRepo) getField(key, name string, passphrase []byte) (string, error) {
-	plaintext, err := r.fs.OpenEncrypted(r.fs.Join(key, name+fileExtension), passphrase)
+func (r *FormRepo) getField(key, name string) (string, error) {
+	plaintext, err := r.fs.OpenEncrypted(r.fs.Join(key, name+fileExtension))
 	if err != nil {
 		return "", err
 	}
@@ -218,12 +218,12 @@ func NewFileRepo(fs *CryptoFS) *FileRepo {
 	return &FileRepo{fs: fs}
 }
 
-func (r *FileRepo) Open(key string, passphrase []byte) (io.ReadCloser, error) {
-	return r.fs.OpenEncrypted(key+fileExtension, passphrase)
+func (r *FileRepo) Open(key string) (io.ReadCloser, error) {
+	return r.fs.OpenEncrypted(key + fileExtension)
 }
 
-func (r *FileRepo) Line(key string, passphrase []byte) (string, error) {
-	plaintext, err := r.Open(key, passphrase)
+func (r *FileRepo) Line(key string) (string, error) {
+	plaintext, err := r.Open(key)
 	if err != nil {
 		return "", err
 	}
