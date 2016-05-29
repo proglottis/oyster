@@ -5,6 +5,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/proglottis/oyster/config"
+	"github.com/proglottis/oyster/cryptofs"
+	_ "github.com/proglottis/oyster/gpgme"
 	"github.com/sourcegraph/rwvfs"
 )
 
@@ -21,7 +24,7 @@ var testKeys = []string{
 func TestFormRepoPutGet(t *testing.T) {
 	repo := setupFormRepo(t)
 
-	if _, err := repo.Get("test"); err != ErrNotFound {
+	if _, err := repo.Get("test"); err != cryptofs.ErrNotFound {
 		t.Error("Expected ErrNotFound, got", err)
 	}
 
@@ -134,7 +137,7 @@ func TestFormRepoRemove(t *testing.T) {
 func TestFileRepoCreateOpen(t *testing.T) {
 	repo := setupFileRepo(t)
 
-	if _, err := repo.Open("test"); err != ErrNotFound {
+	if _, err := repo.Open("test"); err != cryptofs.ErrNotFound {
 		t.Error("Expected ErrNotFound, got", err)
 	}
 
@@ -176,7 +179,10 @@ func TestFileRepoCreateOpen(t *testing.T) {
 
 func setupFormRepo(t testing.TB) *FormRepo {
 	os.Setenv("GNUPGHOME", "./testdata/gpghome")
-	fs := NewCryptoFS(rwvfs.Map(map[string]string{}), NewConfig())
+	fs, err := cryptofs.New("gpgme", rwvfs.Map(map[string]string{}), config.New())
+	if err != nil {
+		t.Fatal(err)
+	}
 	fs.SetCallback(func() []byte { return []byte("password") })
 	if err := InitRepo(fs, []string{"test@example.com"}); err != nil {
 		t.Fatal(err)
@@ -186,7 +192,10 @@ func setupFormRepo(t testing.TB) *FormRepo {
 
 func setupFileRepo(t testing.TB) *FileRepo {
 	os.Setenv("GNUPGHOME", "./testdata/gpghome")
-	fs := NewCryptoFS(rwvfs.Map(map[string]string{}), NewConfig())
+	fs, err := cryptofs.New("gpgme", rwvfs.Map(map[string]string{}), config.New())
+	if err != nil {
+		t.Fatal(err)
+	}
 	fs.SetCallback(func() []byte { return []byte("password") })
 	if err := InitRepo(fs, []string{"test@example.com"}); err != nil {
 		t.Fatal(err)

@@ -1,6 +1,6 @@
 // +build darwin linux
 
-package oyster
+package config
 
 import (
 	"os/user"

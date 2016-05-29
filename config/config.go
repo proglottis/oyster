@@ -1,4 +1,4 @@
-package oyster
+package config
 
 import (
 	"os"
@@ -11,15 +11,15 @@ type Config struct {
 	ini *config.Config
 }
 
-func NewConfig() *Config {
+func New() *Config {
 	return &Config{ini: config.NewDefault()}
 }
 
-func ReadConfig() (*Config, error) {
+func Read() (*Config, error) {
 	ini, err := config.ReadDefault(path.Join(configDir(), hiddenPrefix+"oysterconfig"))
 	if err != nil {
 		if os.IsNotExist(err) {
-			return NewConfig(), nil
+			return New(), nil
 		}
 		return nil, err
 	}

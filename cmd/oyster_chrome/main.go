@@ -8,6 +8,10 @@ import (
 	"os"
 
 	"github.com/proglottis/oyster"
+	"github.com/proglottis/oyster/config"
+	"github.com/proglottis/oyster/cryptofs"
+	_ "github.com/proglottis/oyster/gpgme"
+	_ "github.com/proglottis/oyster/openpgp"
 	"github.com/sourcegraph/rwvfs"
 )
 
@@ -204,11 +208,14 @@ func (h *RequestHandler) Run() error {
 func main() {
 	in := make(chan *Message)
 	out := make(chan *Message)
-	config, err := oyster.ReadConfig()
+	config, err := config.Read()
 	if err != nil {
 		panic(err)
 	}
-	fs := oyster.NewCryptoFS(rwvfs.OSPerm(config.Home(), 0600, 0700), config)
+	fs, err := cryptofs.New("gpgme", rwvfs.OSPerm(config.Home(), 0600, 0700), config)
+	if err != nil {
+		panic(err)
+	}
 
 	handler := &RequestHandler{
 		in:   in,

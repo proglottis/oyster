@@ -10,6 +10,10 @@ import (
 	"github.com/atotto/clipboard"
 	"github.com/codegangsta/cli"
 	"github.com/proglottis/oyster"
+	"github.com/proglottis/oyster/config"
+	"github.com/proglottis/oyster/cryptofs"
+	_ "github.com/proglottis/oyster/gpgme"
+	_ "github.com/proglottis/oyster/openpgp"
 	"github.com/sourcegraph/rwvfs"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -105,12 +109,16 @@ func callback() []byte {
 }
 
 func main() {
-	config, err := oyster.ReadConfig()
+	config, err := config.Read()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	fs := oyster.NewCryptoFS(rwvfs.OSPerm(config.Home(), 0600, 0700), config)
+	fs, err := cryptofs.New("gpgme", rwvfs.OSPerm(config.Home(), 0600, 0700), config)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	fs.SetCallback(callback)
 	repo := oyster.NewFileRepo(fs)
 	app := cli.NewApp()

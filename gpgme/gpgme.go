@@ -1,6 +1,4 @@
-// +build gpgme
-
-package oyster
+package gpgme
 
 import (
 	"bufio"
@@ -10,19 +8,25 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/proglottis/gpgme"
+	"github.com/proglottis/oyster/config"
+	"github.com/proglottis/oyster/cryptofs"
 	"github.com/sourcegraph/rwvfs"
 )
 
-type gpgmeFS struct {
-	rwvfs.FileSystem
-	cb Callback
+func init() {
+	cryptofs.Register("gpgme", New)
 }
 
-func NewCryptoFS(fs rwvfs.FileSystem, config *Config) CryptoFS {
+type gpgmeFS struct {
+	rwvfs.FileSystem
+	cb cryptofs.Callback
+}
+
+func New(fs rwvfs.FileSystem, config *config.Config) cryptofs.CryptoFS {
 	return &gpgmeFS{FileSystem: fs}
 }
 
-func (fs *gpgmeFS) SetCallback(cb Callback) {
+func (fs *gpgmeFS) SetCallback(cb cryptofs.Callback) {
 	fs.cb = cb
 }
 
@@ -31,7 +35,7 @@ func (fs *gpgmeFS) CheckIdentities(ids []string) error {
 }
 
 func (fs *gpgmeFS) Identities() ([]string, error) {
-	f, err := fs.Open(idFilename)
+	f, err := fs.Open(".gpg-id")
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, errors.New("No selected key. Run `oyster init <your GPG key ID or email>`")
@@ -48,7 +52,7 @@ func (fs *gpgmeFS) Identities() ([]string, error) {
 }
 
 func (fs *gpgmeFS) SetIdentities(ids []string) error {
-	f, err := fs.Create(idFilename)
+	f, err := fs.Create(".gpg-id")
 	if err != nil {
 		return errors.Wrap(err, "create identities")
 	}
@@ -94,7 +98,7 @@ func (fs *gpgmeFS) OpenEncrypted(name string) (io.ReadCloser, error) {
 	f, err := fs.Open(name)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, ErrNotFound
+			return nil, cryptofs.ErrNotFound
 		}
 		return nil, errors.Wrap(err, "open file")
 	}

@@ -1,6 +1,4 @@
-// +build gpgme
-
-package oyster
+package gpgme
 
 import (
 	"io"
@@ -8,6 +6,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/proglottis/oyster"
+	"github.com/proglottis/oyster/config"
+	"github.com/proglottis/oyster/cryptofs"
 	"github.com/sourcegraph/rwvfs"
 )
 
@@ -69,11 +70,11 @@ func TestGpgMEFS_OpenEncrypted(t *testing.T) {
 	}
 }
 
-func setupCryptoFS(t testing.TB) CryptoFS {
-	os.Setenv("GNUPGHOME", "./testdata/gpghome")
-	fs := NewCryptoFS(rwvfs.Map(map[string]string{}), NewConfig())
+func setupCryptoFS(t testing.TB) cryptofs.CryptoFS {
+	os.Setenv("GNUPGHOME", "../testdata/gpghome")
+	fs := New(rwvfs.Map(map[string]string{}), config.New())
 	fs.SetCallback(func() []byte { return []byte("password") })
-	if err := InitRepo(fs, []string{"test@example.com"}); err != nil {
+	if err := oyster.InitRepo(fs, []string{"test@example.com"}); err != nil {
 		t.Fatal(err)
 	}
 	return fs

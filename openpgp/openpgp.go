@@ -1,6 +1,4 @@
-// +build !gpgme
-
-package oyster
+package openpgp
 
 import (
 	"bufio"
@@ -11,6 +9,8 @@ import (
 	"path"
 	"strings"
 
+	"github.com/proglottis/oyster/config"
+	"github.com/proglottis/oyster/cryptofs"
 	"github.com/sourcegraph/rwvfs"
 	"golang.org/x/crypto/openpgp"
 )
@@ -19,6 +19,10 @@ var (
 	ErrCannotDecryptKey = errors.New("Cannot decrypt key")
 	ErrNoMatchingKeys   = errors.New("No matching keys")
 )
+
+func init() {
+	cryptofs.Register("openpgp", New)
+}
 
 func EntityMatchesId(entity *openpgp.Entity, id string) bool {
 	for _, identity := range entity.Identities {
@@ -166,20 +170,20 @@ func (r GpgEntityRepo) PublicKeyRing(ids []string) (openpgp.EntityList, error) {
 
 type openpgpFS struct {
 	rwvfs.FileSystem
-	callback Callback
+	callback cryptofs.Callback
 	entities GpgEntityRepo
 }
 
-func NewCryptoFS(fs rwvfs.FileSystem, config *Config) CryptoFS {
+func New(fs rwvfs.FileSystem, config *config.Config) cryptofs.CryptoFS {
 	return &openpgpFS{FileSystem: fs, entities: NewGpgRepo(config.GpgHome())}
 }
 
-func (fs *openpgpFS) SetCallback(cb Callback) {
+func (fs *openpgpFS) SetCallback(cb cryptofs.Callback) {
 	fs.callback = cb
 }
 
 func (fs *openpgpFS) Identities() ([]string, error) {
-	f, err := fs.Open(idFilename)
+	f, err := fs.Open(".gpg-id")
 	if err != nil {
 		if os.IsNotExist(err) {
 			return fs.entities.DefaultKeys()
@@ -216,7 +220,7 @@ func (fs *openpgpFS) CheckIdentities(ids []string) error {
 }
 
 func (fs *openpgpFS) SetIdentities(ids []string) error {
-	f, err := fs.Create(idFilename)
+	f, err := fs.Create(".gpg-id")
 	if err != nil {
 		return err
 	}
@@ -233,7 +237,7 @@ func (fs *openpgpFS) OpenEncrypted(name string) (io.ReadCloser, error) {
 	ciphertext, err := fs.Open(name)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, ErrNotFound
+			return nil, cryptofs.ErrNotFound
 		}
 		return nil, err
 	}

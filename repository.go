@@ -2,7 +2,6 @@ package oyster
 
 import (
 	"bufio"
-	"errors"
 	"io"
 	"net/url"
 	"path/filepath"
@@ -10,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/kr/fs"
+	"github.com/proglottis/oyster/cryptofs"
 	"github.com/sourcegraph/rwvfs"
 )
 
@@ -20,11 +20,7 @@ const (
 	pathSep       = "/"
 )
 
-var (
-	ErrNotFound = errors.New("Not found")
-)
-
-func InitRepo(fs CryptoFS, ids []string) error {
+func InitRepo(fs cryptofs.CryptoFS, ids []string) error {
 	if err := fs.CheckIdentities(ids); err != nil {
 		return err
 	}
@@ -50,27 +46,11 @@ type Field struct {
 	Value string `json:"value,omitempty"`
 }
 
-type Callback func() []byte
-
-type CryptoFS interface {
-	rwvfs.FileSystem
-
-	Join(elem ...string) string
-
-	CheckIdentities(ids []string) error
-	SetIdentities(ids []string) error
-	Identities() ([]string, error)
-
-	OpenEncrypted(key string) (io.ReadCloser, error)
-	CreateEncrypted(key string) (io.WriteCloser, error)
-	SetCallback(cb Callback)
-}
-
 type FormRepo struct {
-	fs CryptoFS
+	fs cryptofs.CryptoFS
 }
 
-func NewFormRepo(fs CryptoFS) *FormRepo {
+func NewFormRepo(fs cryptofs.CryptoFS) *FormRepo {
 	return &FormRepo{fs: fs}
 }
 
@@ -86,7 +66,7 @@ func (r *FormRepo) List() ([]Form, error) {
 		}
 		form, err := r.Fields(walker.Path())
 		switch err {
-		case ErrNotFound: // Ignore
+		case cryptofs.ErrNotFound: // Ignore
 		case nil:
 			if len(form.Fields) > 0 {
 				forms = append(forms, *form)
@@ -116,7 +96,7 @@ func (r *FormRepo) Search(query string) ([]Form, error) {
 			key := strings.Trim(host+pathSep+path, pathSep)
 			form, err := r.Fields(key)
 			switch err {
-			case ErrNotFound: // Ignore
+			case cryptofs.ErrNotFound: // Ignore
 			case nil:
 				if len(form.Fields) > 0 {
 					forms = append(forms, *form)
@@ -132,7 +112,7 @@ func (r *FormRepo) Search(query string) ([]Form, error) {
 func (r *FormRepo) Get(key string) (*Form, error) {
 	fileinfos, err := r.fs.ReadDir(key)
 	if err != nil {
-		return nil, ErrNotFound
+		return nil, cryptofs.ErrNotFound
 	}
 	form := Form{
 		Key:    key,
@@ -167,7 +147,7 @@ func (r *FormRepo) getField(key, name string) (string, error) {
 func (r *FormRepo) Fields(key string) (*Form, error) {
 	fileinfos, err := r.fs.ReadDir(key)
 	if err != nil {
-		return nil, ErrNotFound
+		return nil, cryptofs.ErrNotFound
 	}
 	form := Form{
 		Key:    key,
@@ -200,7 +180,7 @@ func (r *FormRepo) Put(form *Form) error {
 func (r *FormRepo) Remove(key string) error {
 	fileinfos, err := r.fs.ReadDir(key)
 	if err != nil {
-		return ErrNotFound
+		return cryptofs.ErrNotFound
 	}
 	for _, fileinfo := range fileinfos {
 		filename := fileinfo.Name()
@@ -227,10 +207,10 @@ func (r *FormRepo) putField(key string, field Field) error {
 }
 
 type FileRepo struct {
-	fs CryptoFS
+	fs cryptofs.CryptoFS
 }
 
-func NewFileRepo(fs CryptoFS) *FileRepo {
+func NewFileRepo(fs cryptofs.CryptoFS) *FileRepo {
 	return &FileRepo{fs: fs}
 }
 

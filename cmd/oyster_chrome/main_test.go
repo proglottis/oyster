@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/proglottis/oyster"
+	"github.com/proglottis/oyster/config"
+	"github.com/proglottis/oyster/cryptofs"
 	"github.com/sourcegraph/rwvfs"
 )
 
@@ -32,7 +34,10 @@ func setupHandler(t testing.TB) (chan<- *Message, <-chan *Message) {
 	os.Setenv("GNUPGHOME", "../../testdata/gpghome")
 	in := make(chan *Message)
 	out := make(chan *Message)
-	fs := oyster.NewCryptoFS(rwvfs.Map(map[string]string{}), oyster.NewConfig())
+	fs, err := cryptofs.New("gpgme", rwvfs.Map(map[string]string{}), config.New())
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := oyster.InitRepo(fs, []string{"test@example.com"}); err != nil {
 		t.Fatal(err)
 	}

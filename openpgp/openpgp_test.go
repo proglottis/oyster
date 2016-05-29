@@ -1,13 +1,11 @@
-// +build !gpgme
-
-package oyster
+package openpgp
 
 import (
 	"testing"
 )
 
 func TestGpgRepoSecureKeyRing(t *testing.T) {
-	repo := NewGpgRepo("testdata/gpghome")
+	repo := NewGpgRepo("../testdata/gpghome")
 	el, err := repo.SecureKeyRing([]string{"test@example.com"})
 	if err != nil {
 		t.Error(err)
@@ -18,7 +16,7 @@ func TestGpgRepoSecureKeyRing(t *testing.T) {
 }
 
 func TestGpgRepoPublicKeyRing(t *testing.T) {
-	repo := NewGpgRepo("testdata/gpghome")
+	repo := NewGpgRepo("../testdata/gpghome")
 	el, err := repo.PublicKeyRing([]string{"test@example.com"})
 	if err != nil {
 		t.Error(err)
@@ -29,7 +27,7 @@ func TestGpgRepoPublicKeyRing(t *testing.T) {
 }
 
 func TestEntityMatchesId(t *testing.T) {
-	el, err := ReadKeyRing("testdata/gpghome/pubring.gpg")
+	el, err := ReadKeyRing("../testdata/gpghome/pubring.gpg")
 	if err != nil {
 		t.Error(err)
 	}

@@ -1,4 +1,4 @@
-package oyster
+package config
 
 import (
 	"os"
