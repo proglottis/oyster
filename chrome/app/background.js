@@ -19,7 +19,9 @@ function newFormPopup(tabId, url) {
       fields: fields
     };
     chrome.windows.create({url: 'newform.html', type: 'popup', width: 400, height: 500}, function(){
-      chrome.runtime.sendMessage(form);
+      window.setTimeout(function() {
+        chrome.runtime.sendMessage(form);
+      }, 500);
     });
   });
 }
