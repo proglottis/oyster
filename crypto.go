@@ -1,3 +1,5 @@
+// +build !gpgme
+
 package oyster
 
 import (
@@ -162,19 +164,21 @@ func (r GpgEntityRepo) PublicKeyRing(ids []string) (openpgp.EntityList, error) {
 	return EntitiesFromKeyRing(path.Join(r.root, "pubring.gpg"), ids)
 }
 
-type Callback func() []byte
-
-type CryptoFS struct {
+type openpgpFS struct {
 	rwvfs.FileSystem
-	Callback Callback
+	callback Callback
 	entities GpgEntityRepo
 }
 
-func NewCryptoFS(fs rwvfs.FileSystem, entities GpgEntityRepo) *CryptoFS {
-	return &CryptoFS{FileSystem: fs, entities: entities}
+func NewCryptoFS(fs rwvfs.FileSystem, config *Config) CryptoFS {
+	return &openpgpFS{FileSystem: fs, entities: NewGpgRepo(config.GpgHome())}
 }
 
-func (fs CryptoFS) Identities() ([]string, error) {
+func (fs *openpgpFS) SetCallback(cb Callback) {
+	fs.callback = cb
+}
+
+func (fs *openpgpFS) Identities() ([]string, error) {
 	f, err := fs.Open(idFilename)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -191,7 +195,7 @@ func (fs CryptoFS) Identities() ([]string, error) {
 	return ids, scanner.Err()
 }
 
-func (fs CryptoFS) CheckIdentities(ids []string) error {
+func (fs *openpgpFS) CheckIdentities(ids []string) error {
 	el, err := fs.entities.PublicKeyRing(ids)
 	if err != nil {
 		return err
@@ -211,7 +215,7 @@ func (fs CryptoFS) CheckIdentities(ids []string) error {
 	return nil
 }
 
-func (fs CryptoFS) SetIdentities(ids []string) error {
+func (fs *openpgpFS) SetIdentities(ids []string) error {
 	f, err := fs.Create(idFilename)
 	if err != nil {
 		return err
@@ -225,7 +229,7 @@ func (fs CryptoFS) SetIdentities(ids []string) error {
 	return nil
 }
 
-func (fs CryptoFS) OpenEncrypted(name string) (io.ReadCloser, error) {
+func (fs *openpgpFS) OpenEncrypted(name string) (io.ReadCloser, error) {
 	ciphertext, err := fs.Open(name)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -241,10 +245,10 @@ func (fs CryptoFS) OpenEncrypted(name string) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ReadEncrypted(ciphertext, el, fs.Callback())
+	return ReadEncrypted(ciphertext, el, fs.callback())
 }
 
-func (fs CryptoFS) CreateEncrypted(name string) (io.WriteCloser, error) {
+func (fs *openpgpFS) CreateEncrypted(name string) (io.WriteCloser, error) {
 	ciphertext, err := fs.Create(name)
 	if err != nil {
 		return nil, err
@@ -260,6 +264,6 @@ func (fs CryptoFS) CreateEncrypted(name string) (io.WriteCloser, error) {
 	return WriteEncrypted(ciphertext, el)
 }
 
-func (fs CryptoFS) Join(elem ...string) string {
+func (fs *openpgpFS) Join(elem ...string) string {
 	return path.Join(elem...)
 }

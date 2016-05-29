@@ -24,7 +24,7 @@ var (
 	ErrNotFound = errors.New("Not found")
 )
 
-func InitRepo(fs *CryptoFS, ids []string) error {
+func InitRepo(fs CryptoFS, ids []string) error {
 	if err := fs.CheckIdentities(ids); err != nil {
 		return err
 	}
@@ -50,11 +50,27 @@ type Field struct {
 	Value string `json:"value,omitempty"`
 }
 
-type FormRepo struct {
-	fs *CryptoFS
+type Callback func() []byte
+
+type CryptoFS interface {
+	rwvfs.FileSystem
+
+	Join(elem ...string) string
+
+	CheckIdentities(ids []string) error
+	SetIdentities(ids []string) error
+	Identities() ([]string, error)
+
+	OpenEncrypted(key string) (io.ReadCloser, error)
+	CreateEncrypted(key string) (io.WriteCloser, error)
+	SetCallback(cb Callback)
 }
 
-func NewFormRepo(fs *CryptoFS) *FormRepo {
+type FormRepo struct {
+	fs CryptoFS
+}
+
+func NewFormRepo(fs CryptoFS) *FormRepo {
 	return &FormRepo{fs: fs}
 }
 
@@ -211,10 +227,10 @@ func (r *FormRepo) putField(key string, field Field) error {
 }
 
 type FileRepo struct {
-	fs *CryptoFS
+	fs CryptoFS
 }
 
-func NewFileRepo(fs *CryptoFS) *FileRepo {
+func NewFileRepo(fs CryptoFS) *FileRepo {
 	return &FileRepo{fs: fs}
 }
 

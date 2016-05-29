@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"os"
 	"testing"
 
 	"github.com/proglottis/oyster"
@@ -28,10 +29,10 @@ func TestRequestHandler_GET(t *testing.T) {
 }
 
 func setupHandler(t testing.TB) (chan<- *Message, <-chan *Message) {
+	os.Setenv("GNUPGHOME", "../../testdata/gpghome")
 	in := make(chan *Message)
 	out := make(chan *Message)
-	gpg := oyster.NewGpgRepo("../../testdata/gpghome")
-	fs := oyster.NewCryptoFS(rwvfs.Map(map[string]string{}), gpg)
+	fs := oyster.NewCryptoFS(rwvfs.Map(map[string]string{}), oyster.NewConfig())
 	if err := oyster.InitRepo(fs, []string{"test@example.com"}); err != nil {
 		t.Fatal(err)
 	}
@@ -51,9 +52,9 @@ func setupHandler(t testing.TB) (chan<- *Message, <-chan *Message) {
 		out:  out,
 		repo: repo,
 	}
-	fs.Callback = func() []byte {
+	fs.SetCallback(func() []byte {
 		return handler.Password()
-	}
+	})
 	go handler.Run()
 	return in, out
 }

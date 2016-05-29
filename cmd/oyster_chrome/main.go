@@ -208,17 +208,16 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	gpg := oyster.NewGpgRepo(config.GpgHome())
-	fs := oyster.NewCryptoFS(rwvfs.OSPerm(config.Home(), 0600, 0700), gpg)
+	fs := oyster.NewCryptoFS(rwvfs.OSPerm(config.Home(), 0600, 0700), config)
 
 	handler := &RequestHandler{
 		in:   in,
 		out:  out,
 		repo: oyster.NewFormRepo(fs),
 	}
-	fs.Callback = func() []byte {
+	fs.SetCallback(func() []byte {
 		return handler.Password()
-	}
+	})
 	go handler.Run()
 
 	go writeMessages(os.Stdout, out)

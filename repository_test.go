@@ -2,6 +2,7 @@ package oyster
 
 import (
 	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/sourcegraph/rwvfs"
@@ -174,9 +175,9 @@ func TestFileRepoCreateOpen(t *testing.T) {
 }
 
 func setupFormRepo(t testing.TB) *FormRepo {
-	gpg := NewGpgRepo("testdata/gpghome")
-	fs := NewCryptoFS(rwvfs.Map(map[string]string{}), gpg)
-	fs.Callback = func() []byte { return []byte("password") }
+	os.Setenv("GNUPGHOME", "./testdata/gpghome")
+	fs := NewCryptoFS(rwvfs.Map(map[string]string{}), NewConfig())
+	fs.SetCallback(func() []byte { return []byte("password") })
 	if err := InitRepo(fs, []string{"test@example.com"}); err != nil {
 		t.Fatal(err)
 	}
@@ -184,9 +185,9 @@ func setupFormRepo(t testing.TB) *FormRepo {
 }
 
 func setupFileRepo(t testing.TB) *FileRepo {
-	gpg := NewGpgRepo("testdata/gpghome")
-	fs := NewCryptoFS(rwvfs.Map(map[string]string{}), gpg)
-	fs.Callback = func() []byte { return []byte("password") }
+	os.Setenv("GNUPGHOME", "./testdata/gpghome")
+	fs := NewCryptoFS(rwvfs.Map(map[string]string{}), NewConfig())
+	fs.SetCallback(func() []byte { return []byte("password") })
 	if err := InitRepo(fs, []string{"test@example.com"}); err != nil {
 		t.Fatal(err)
 	}

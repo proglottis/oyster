@@ -1,3 +1,5 @@
+// +build !gpgme
+
 package oyster
 
 import (

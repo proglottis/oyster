@@ -110,9 +110,8 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	gpg := oyster.NewGpgRepo(config.GpgHome())
-	fs := oyster.NewCryptoFS(rwvfs.OSPerm(config.Home(), 0600, 0700), gpg)
-	fs.Callback = callback
+	fs := oyster.NewCryptoFS(rwvfs.OSPerm(config.Home(), 0600, 0700), config)
+	fs.SetCallback(callback)
 	repo := oyster.NewFileRepo(fs)
 	app := cli.NewApp()
 	app.Name = "oyster"
