@@ -1,3 +1,4 @@
-/.gnupg
 .envrc
 .oyster
+/.gnupg
+/testdata/gpghome/random_seed
